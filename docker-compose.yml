@@ -1,0 +1,127 @@
+# OTAP-omgeving voor de legacyui-audit (sprint 1, taak 5.3)
+#
+# BELANGRIJK / eerlijk over wat dit is:
+# legacyui is een OpenMRS-*module* (.omod), geen zelfstandige applicatie.
+# Een echte draaiomgeving = een OpenMRS Platform-instance + database, waarin
+# de gebouwde .omod wordt geladen. Onderstaande compose zet daarom per
+# omgeving (dev/test/prod) een OpenMRS + MySQL-paar neer. De .omod uit
+# `omod/target/` moet je in de modules-map van de betreffende instance
+# plaatsen (zie volumes) nadat `mvn clean install` op JDK 8 is geslaagd.
+#
+# Gebruik:
+#   docker compose --profile dev  up
+#   docker compose --profile test up
+#   docker compose --profile prod up
+#
+# De drie omgevingen verschillen in poort + datavolume, zodat ze tegelijk
+# kunnen draaien en gescheiden data houden. Dit dekt de OTAP-eis op
+# infrastructuurniveau; GitHub Environments (dev/test/prod met protection
+# rules) richt je daarnaast in het repo-Settings-tab in.
+#
+# LET OP: image-tags hieronder zijn een redelijk startpunt, GEEN
+# geverifieerde match met OpenMRS Platform 2.0.0. Controleer of de
+# referentieapplicatie-versie bij jullie platformversie past voordat je dit
+# als 'werkend' in het auditrapport opneemt.
+
+services:
+  # ---------------- DEV ----------------
+  db-dev:
+    profiles: [dev]
+    image: mysql:5.7
+    environment:
+      MYSQL_DATABASE: openmrs
+      MYSQL_ROOT_PASSWORD: dev_root_pw
+      MYSQL_USER: openmrs
+      MYSQL_PASSWORD: dev_pw
+    volumes:
+      - dev-db:/var/lib/mysql
+    command: --character-set-server=utf8 --collation-server=utf8_general_ci
+
+  openmrs-dev:
+    profiles: [dev]
+    image: openmrs/openmrs-reference-application-distro:demo
+    depends_on:
+      - db-dev
+    ports:
+      - "8081:8080"
+    environment:
+      DB_DATABASE: openmrs
+      DB_HOST: db-dev
+      DB_USERNAME: openmrs
+      DB_PASSWORD: dev_pw
+      DB_CREATE_TABLES: "true"
+      DB_AUTO_UPDATE: "true"
+    volumes:
+      - dev-data:/openmrs/data
+      # Plaats hier de gebouwde module:
+      - ./omod/target:/openmrs/data/modules-staging:ro
+
+  # ---------------- TEST ----------------
+  db-test:
+    profiles: [test]
+    image: mysql:5.7
+    environment:
+      MYSQL_DATABASE: openmrs
+      MYSQL_ROOT_PASSWORD: test_root_pw
+      MYSQL_USER: openmrs
+      MYSQL_PASSWORD: test_pw
+    volumes:
+      - test-db:/var/lib/mysql
+    command: --character-set-server=utf8 --collation-server=utf8_general_ci
+
+  openmrs-test:
+    profiles: [test]
+    image: openmrs/openmrs-reference-application-distro:demo
+    depends_on:
+      - db-test
+    ports:
+      - "8082:8080"
+    environment:
+      DB_DATABASE: openmrs
+      DB_HOST: db-test
+      DB_USERNAME: openmrs
+      DB_PASSWORD: test_pw
+      DB_CREATE_TABLES: "true"
+      DB_AUTO_UPDATE: "true"
+    volumes:
+      - test-data:/openmrs/data
+      - ./omod/target:/openmrs/data/modules-staging:ro
+
+  # ---------------- PROD ----------------
+  db-prod:
+    profiles: [prod]
+    image: mysql:5.7
+    environment:
+      MYSQL_DATABASE: openmrs
+      MYSQL_ROOT_PASSWORD: prod_root_pw
+      MYSQL_USER: openmrs
+      MYSQL_PASSWORD: prod_pw
+    volumes:
+      - prod-db:/var/lib/mysql
+    command: --character-set-server=utf8 --collation-server=utf8_general_ci
+
+  openmrs-prod:
+    profiles: [prod]
+    image: openmrs/openmrs-reference-application-distro:demo
+    depends_on:
+      - db-prod
+    ports:
+      - "8083:8080"
+    environment:
+      DB_DATABASE: openmrs
+      DB_HOST: db-prod
+      DB_USERNAME: openmrs
+      DB_PASSWORD: prod_pw
+      DB_CREATE_TABLES: "false"
+      DB_AUTO_UPDATE: "false"
+    volumes:
+      - prod-data:/openmrs/data
+      - ./omod/target:/openmrs/data/modules-staging:ro
+
+volumes:
+  dev-db:
+  dev-data:
+  test-db:
+  test-data:
+  prod-db:
+  prod-data:
