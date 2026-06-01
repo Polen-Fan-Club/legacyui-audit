@@ -1,8 +1,13 @@
 name: CodeQL
 
-# SAST via GitHub CodeQL. Resultaten verschijnen in het Security-tab
-# (Code scanning alerts) -> bewijs voor sprint 1 'repo hardenen'.
-# Java vereist een echte build; daarom 'manual' build mode op JDK 8.
+# SAST via GitHub CodeQL.
+#
+# LET OP - bewuste keuze, verantwoord in het complianceverslag:
+# Upload van resultaten naar het Security-tab (Code scanning alerts) vereist
+# GitHub Advanced Security, dat niet beschikbaar is op deze private repo met
+# een Pro-plan. De analyse zelf draait wel volledig (scant de hele module).
+# Daarom: upload naar Security-tab uitgezet (upload: false) en de SARIF-output
+# als CI-artifact bewaard, zodat het scanbewijs herleidbaar vastligt.
 
 on:
   push:
@@ -42,7 +47,21 @@ jobs:
         env:
           CI: "true"
 
+      # Analyse draaien, SARIF lokaal genereren, NIET uploaden naar Security-tab.
+      # continue-on-error: als de action toch een geblokkeerde API-call doet,
+      # laten we de job niet falen - het scanbewijs zit in de artifact.
       - name: Perform CodeQL Analysis
+        id: codeql
+        continue-on-error: true
         uses: github/codeql-action/analyze@v3
         with:
           category: "/language:java-kotlin"
+          upload: false
+          output: codeql-results
+
+      - name: Upload CodeQL SARIF artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: codeql-sarif
+          path: codeql-results
+          if-no-files-found: error
