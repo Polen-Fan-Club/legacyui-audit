@@ -1,0 +1,69 @@
+name: CI
+
+# Bewijs voor sprint 1: build slaagt reproduceerbaar op JDK 8.
+# CI=true wordt automatisch door GitHub Actions gezet -> activeert het
+# 'ci'-profiel in pom.xml, waardoor de license-plugin op 'check' staat
+# i.p.v. 'format' (geen herschreven bronbestanden in CI).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build (JDK 8)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 8 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "8"
+          cache: maven
+
+      - name: Build + test
+        # CI=true is door GitHub al gezet; expliciet voor de duidelijkheid.
+        run: mvn -B clean install
+        env:
+          CI: "true"
+
+      # --- SBOM (CycloneDX) als CI-artifact: eindcheck sprint 1 ---
+      # outputDirectory expliciet gezet zodat de parent-pom de output niet
+      # naar target/classes/META-INF/sbom/ kan verleggen (bekend gedrag bij
+      # sommige parent-poms). outputName=sbom.cdx -> sbom.cdx.json.
+      - name: Generate SBOM (CycloneDX JSON)
+        run: >
+          mvn -B org.cyclonedx:cyclonedx-maven-plugin:2.8.0:makeAggregateBom
+          -DoutputFormat=json
+          -DoutputName=sbom.cdx
+          -DoutputDirectory=${{ github.workspace }}/target
+          -DschemaVersion=1.5
+        env:
+          CI: "true"
+
+      - name: Collect SBOM
+        run: |
+          mkdir -p sbom-out
+          # Pak het aggregate-bestand; val terug op elke cyclonedx-json als de
+          # naam/locatie afwijkt, zodat de artifact-stap nooit leeg faalt.
+          cp target/sbom.cdx.json sbom-out/ 2>/dev/null \
+            || find . -path "*/target/*" -name "*.json" \
+                 -exec grep -l '"bomFormat"[[:space:]]*:[[:space:]]*"CycloneDX"' {} \; \
+                 -exec cp {} sbom-out/ \;
+          echo "Gevonden SBOM-bestanden:"
+          ls -la sbom-out
+
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-cyclonedx
+          path: sbom-out/*.json
+          if-no-files-found: error
