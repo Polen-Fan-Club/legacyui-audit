@@ -1,0 +1,48 @@
+name: CodeQL
+
+# SAST via GitHub CodeQL. Resultaten verschijnen in het Security-tab
+# (Code scanning alerts) -> bewijs voor sprint 1 'repo hardenen'.
+# Java vereist een echte build; daarom 'manual' build mode op JDK 8.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 6 * * 1" # wekelijks, maandag 06:00 UTC
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  analyze:
+    name: Analyze (java)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 8 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "8"
+          cache: maven
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: java-kotlin
+          build-mode: manual
+
+      - name: Build
+        run: mvn -B clean install -DskipTests
+        env:
+          CI: "true"
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:java-kotlin"

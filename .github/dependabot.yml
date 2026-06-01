@@ -1,0 +1,26 @@
+version: 2
+
+# Dependabot version updates. Let op: dit is NIET hetzelfde als Dependabot
+# *alerts* / security updates -- die zet je AAN in het Security-tab van de
+# repo (Settings > Code security). Dit bestand regelt de wekelijkse
+# version-update PR's. Beide samen = 'Dependabot actief' (eindcheck sprint 1).
+
+updates:
+  # Maven-dependencies (api/ + omod/ erven van root pom)
+  - package-ecosystem: maven
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+      - maven
+
+  # De GitHub Actions zelf (setup-java, checkout, codeql-action, ...)
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+      - github-actions
