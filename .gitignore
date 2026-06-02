@@ -79,3 +79,6 @@ nb-configuration.xml
 # Secrets #
 .env
 !.env.example
+
+# Temp Files #
+temp/
