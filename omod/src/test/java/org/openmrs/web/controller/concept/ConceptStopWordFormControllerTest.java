@@ -30,7 +30,6 @@ public class ConceptStopWordFormControllerTest extends BaseModuleWebContextSensi
 	
 	/**
 	 * @see {@link ConceptStopWordFormController#handleSubmission(HttpSession, ConceptStopWordFormBackingObject, org.springframework.validation.BindingResult)
-
 	 */
 	@Test
 	@Verifies(value = "should add new ConceptStopWord", method = "handleSubmission(HttpSession, ConceptStopWordFormBackingObject, BindingResult)")
@@ -51,7 +50,6 @@ public class ConceptStopWordFormControllerTest extends BaseModuleWebContextSensi
 	
 	/**
 	 * @see {@link ConceptStopWordFormController#handleSubmission(HttpSession, ConceptStopWordFormBackingObject, org.springframework.validation.BindingResult)
-
 	 */
 	@Test
 	@Verifies(value = "should return error message for an empty ConceptStopWord", method = "handleSubmission(HttpSession, ConceptStopWordFormBackingObject, BindingResult)")
