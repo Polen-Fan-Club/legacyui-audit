@@ -1,0 +1,32 @@
+name: Dependency Review
+
+# SCA-laag 1: blokkeert PR's die NIEUWE kwetsbare dependencies introduceren.
+# Minimale eis uit WS02 (Hardening Dev Pipeline) checklist:
+#   "Dependency Review Action gekoppeld aan PR's"
+# NEN-7510:2024-2: 8.8 (beheer technische kwetsbaarheden), 8.29.
+#
+# Werkt ALLEEN op pull_request: de action vergelijkt de dependency-diff van
+# de PR met de base branch. Op een gewone push is er geen diff -> geen scan.
+# Daarom geen 'push'-trigger; dat zou alleen maar falen/niets doen.
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write   # nodig om de samenvatting als PR-comment te plaatsen
+
+jobs:
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: always
