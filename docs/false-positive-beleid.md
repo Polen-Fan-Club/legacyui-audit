@@ -1,6 +1,6 @@
 # Triagebeleid SCA & SAST-findings
 
-Scope: OpenMRS legacyui-module v1.20.0 (`Serino2/legacyui-audit`).
+Scope: OpenMRS legacyui-module v1.20.0 (`Polen-Fan-Club/legacyui-audit`).
 NEN-7510:2024-2 8.8 — kwetsbaarheden tijdig identificeren, beoordelen en verhelpen; doorlooptijd (detectie → patch) documenteren.
 
 ## Status per finding
@@ -16,6 +16,8 @@ Een teamlid beoordeelt elke finding; de pipeline breekt niet automatisch op find
 
 - **Snyk:** via `.snyk`-policyfile in de repo-root. Elke ignore krijgt een `reason` en `expires`. De policyfile staat in versiebeheer, dus de onderdrukking is een commit.
 - **Dependabot:** alert dismissen mét reden; de reden blijft zichtbaar in de repo.
+
+> **Noot — Dependency Review Action niet inzetbaar.** De `actions/dependency-review-action` vereist GitHub Advanced Security. Code Scanning voor private repositories is een betaalde Enterprise-feature ("Contact sales") — geverifieerd op zowel een persoonlijk Pro-account als in een organisatie; een org maken lost dit niet op. De repo public maken zou GHAS gratis geven, maar is onwenselijk voor een vertrouwelijkheidsaudit op een zorgmodule. De PR-gate-functie wordt daarom gedekt door Dependabot security updates (automatische patch-PR's) + Snyk-scanrapport, niet door de Dependency Review Action.
 
 **Regel: geen onderdrukking zonder schriftelijke onderbouwing.**
 
