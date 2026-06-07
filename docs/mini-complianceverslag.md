@@ -1,6 +1,6 @@
 # Mini-complianceverslag — Sprint 1
 
-**Module:** Legacy UI Module v1.20.0 (OpenMRS 2.0.0) · **Repo:** `Serino2/legacyui-audit` (private)
+**Module:** Legacy UI Module v1.20.0 (OpenMRS 2.0.0) · **Repo:** `Polen-Fan-Club/legacyui-audit` (private)
 **Normenkader:** NEN-7510:2024-2 · **Scope:** repo hardenen, CI/CD-pipeline, OTAP-inrichting
 **Datum:** juni 2026 · **Auteur:** Serino · **Gerelateerd:** Gap-analyse NEN-7510 v1.1 (Maurits)
 
@@ -38,7 +38,7 @@ Dit verslag legt vast welke maatregelen in de **CI/CD-pipeline en repo-inrichtin
 
 **M2 — CodeQL SAST-scan.** Statische analyse draait in CI op de volledige module, produceert SARIF. *Ondersteunt* A.8.3/8.5/8.15 als **detectiemaatregel**: vindt potentiële tekortkomingen, lost ze niet op, garandeert geen volledige dekking. **Bewijs:** artifact `codeql-sarif` (SARIF 2.1.0, CodeQL 2.25.5, 592 bestanden, 76 security-queries, 0 findings default-suite).
 - **0 findings ≠ veilig:** draaide met *default* suite, niet `security-extended`. Handmatige inspectie (gap-analyse) vond wél tekortkomingen (ontbrekende audit-logging, dode IP-binding) die de default-suite niet markeerde. SAST en handmatige analyse zijn complementair.
-- **Security-tab niet beschikbaar:** upload vereist GitHub Advanced Security, niet beschikbaar op private Pro-repo. Resultaten daarom als CI-artifact. Analyse draait volledig; alleen de presentatielaag wijkt af. Bewuste, gedocumenteerde keuze.
+- **Security-tab niet beschikbaar:** upload vereist GitHub Advanced Security. Code Scanning voor private repos is een betaalde Enterprise-feature ("Contact sales") — geverifieerd op zowel persoonlijk Pro-account als in een organisatie; een org maken lost dit niet op. Public maken zou GHAS gratis geven, maar is onwenselijk voor een vertrouwelijkheidsaudit op een zorgmodule. Resultaten daarom als CI-artifact. Analyse draait volledig; alleen de presentatielaag wijkt af. Bewuste, geverifieerde keuze.
 
 **M3 — Dependabot.** Geactiveerd voor alerts én version-update-PR's op Maven-deps en GitHub Actions. *Ondersteunt* — geen control direct; beheersmaatregel voor technische kwetsbaarheden. **Bewijs:** alerts + security updates aan; PR's #10–14. De openstaande PR's zijn **bewust niet gemerged** — materiaal voor het sprint-2-patchadvies; nu mergen wijzigt de baseline (`baseline-legacyui-1.20.0`) vóór de analyse. Enkele PR's falen op de license-header-check — zelf een observatie voor het patchadvies.
 
