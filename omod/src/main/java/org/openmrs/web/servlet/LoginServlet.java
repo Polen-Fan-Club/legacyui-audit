@@ -173,7 +173,12 @@ public class LoginServlet extends HttpServlet {
 					
 					response.sendRedirect(redirect);
 					
-					httpSession.setAttribute(WebConstants.OPENMRS_CLIENT_IP_HTTPSESSION_ATTR, request.getLocalAddr());
+					// Bind the session to the real client (TCP peer) address, not the server's own
+					// address (was request.getLocalAddr()). This must use the same source as
+					// RequireTag, otherwise both values stay equal to the server IP and the
+					// mismatch check there never triggers (gap 8.3-6). X-Forwarded-For is
+					// deliberately not trusted here (no validated trusted-proxy allow-list).
+					httpSession.setAttribute(WebConstants.OPENMRS_CLIENT_IP_HTTPSESSION_ATTR, request.getRemoteAddr());
 					httpSession.removeAttribute(WebConstants.OPENMRS_LOGIN_REDIRECT_HTTPSESSION_ATTR);
 					
 					// unset login attempts by this user because they were

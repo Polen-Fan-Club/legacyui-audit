@@ -85,7 +85,15 @@ public class RequireTag extends TagSupport {
 		HttpServletResponse httpResponse = (HttpServletResponse) pageContext.getResponse();
 		HttpSession httpSession = pageContext.getSession();
 		HttpServletRequest request = (HttpServletRequest) pageContext.getRequest();
-		String request_ip_addr = request.getLocalAddr();
+		// Use the real client (TCP peer) address for the session-IP binding. This previously used
+		// request.getLocalAddr() (the server's own address), which made the mismatch check below a
+		// dead code path: it compared the server IP against the stored server IP, so a stolen
+		// session cookie could be replayed from any client IP without detection (gap 8.3-6).
+		// X-Forwarded-For is deliberately NOT honoured here: trusting it without a validated
+		// trusted-proxy allow-list would let an attacker spoof the bound IP and defeat the binding.
+		// The test lab runs without a reverse proxy; behind a trusted proxy, resolve the client IP
+		// from X-Forwarded-For only after confirming the immediate peer is a configured proxy.
+		String request_ip_addr = request.getRemoteAddr();
 		String session_ip_addr = (String) httpSession.getAttribute(WebConstants.OPENMRS_CLIENT_IP_HTTPSESSION_ATTR);
 		
 		UserContext userContext = Context.getUserContext();
