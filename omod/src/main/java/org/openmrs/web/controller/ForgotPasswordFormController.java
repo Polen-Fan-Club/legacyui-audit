@@ -29,6 +29,7 @@ import org.openmrs.api.context.Context;
 import org.openmrs.util.OpenmrsConstants;
 import org.openmrs.util.PrivilegeConstants;
 import org.openmrs.web.WebConstants;
+import org.openmrs.web.user.UserProperties;
 import org.springframework.validation.BindException;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.SimpleFormController;
@@ -170,12 +171,31 @@ public class ForgotPasswordFormController extends SimpleFormController {
 						
 						String randomPassword = getRandomPassword();
 						
+						// Reset the password AND flag a forced change on the next login, under one
+						// privilege block so saveUser can persist the changed password. Mirrors the
+						// EDIT_USERS / GET_USERS / EDIT_USER_PASSWORDS proxy set in ChangePasswordFormController.
+						// The forced-change flag stops the generated temporary password being permanently
+						// valid (gap 8.5-6): ForcePasswordChangeFilter redirects a user carrying this
+						// property to the change-password form on the next request.
 						try {
+							Context.addProxyPrivilege(PrivilegeConstants.GET_USERS);
+							Context.addProxyPrivilege(PrivilegeConstants.EDIT_USERS);
 							Context.addProxyPrivilege(PrivilegeConstants.EDIT_USER_PASSWORDS);
+							// saveUser validates the user and its person/address. That validation reads the
+							// address template (LocationService.getAddressTemplate -> "Get Locations", which
+							// reads a global property), so the anonymous reset user needs these read grants too.
+							Context.addProxyPrivilege(PrivilegeConstants.GET_GLOBAL_PROPERTIES);
+							Context.addProxyPrivilege(PrivilegeConstants.GET_LOCATIONS);
 							Context.getUserService().changePassword(user, randomPassword);
+							new UserProperties(user.getUserProperties()).setSupposedToChangePassword(true);
+							Context.getUserService().saveUser(user);
 						}
 						finally {
+							Context.removeProxyPrivilege(PrivilegeConstants.GET_LOCATIONS);
+							Context.removeProxyPrivilege(PrivilegeConstants.GET_GLOBAL_PROPERTIES);
 							Context.removeProxyPrivilege(PrivilegeConstants.EDIT_USER_PASSWORDS);
+							Context.removeProxyPrivilege(PrivilegeConstants.EDIT_USERS);
+							Context.removeProxyPrivilege(PrivilegeConstants.GET_USERS);
 						}
 						
 						// Audit-logging (NEN 8.15): record THAT a forgot-password reset succeeded and for whom -
@@ -186,6 +206,17 @@ public class ForgotPasswordFormController extends SimpleFormController {
 						httpSession.setAttribute("resetPassword", randomPassword);
 						httpSession.setAttribute(WebConstants.OPENMRS_MSG_ATTR, "auth.password.reset");
 						Context.authenticate(username, randomPassword);
+						// Reload the just-authenticated user so the session context reflects the
+						// forced-change flag set above; ForcePasswordChangeFilter then redirects this
+						// session to the change-password form on the next request (gap 8.5-6). The
+						// reset user is unprivileged, so the reload needs a GET_USERS proxy.
+						try {
+							Context.addProxyPrivilege(PrivilegeConstants.GET_USERS);
+							Context.refreshAuthenticatedUser();
+						}
+						finally {
+							Context.removeProxyPrivilege(PrivilegeConstants.GET_USERS);
+						}
 						httpSession.setAttribute("loginAttempts", 0);
 						
 						return new ModelAndView(new RedirectView(request.getContextPath()
@@ -209,7 +240,18 @@ public class ForgotPasswordFormController extends SimpleFormController {
 	public String getRandomPassword() {
 		//Password should be satisfy the minimum length if any is set, must have 1 upper case letter and 1 number
 		Integer minLength = 8;
-		String str = Context.getAdministrationService().getGlobalProperty(OpenmrsConstants.GP_PASSWORD_MINIMUM_LENGTH);
+		// The anonymous reset user holds no privileges, so this global-property lookup needs a proxy
+		// privilege - the same pattern as the GET_USERS / EDIT_USER_PASSWORDS proxy blocks in onSubmit
+		// (gap 8.5-6). Without it the reset flow threw APIAuthenticationException "Privileges required:
+		// Get Global Properties" before changePassword was ever reached.
+		String str;
+		try {
+			Context.addProxyPrivilege(PrivilegeConstants.GET_GLOBAL_PROPERTIES);
+			str = Context.getAdministrationService().getGlobalProperty(OpenmrsConstants.GP_PASSWORD_MINIMUM_LENGTH);
+		}
+		finally {
+			Context.removeProxyPrivilege(PrivilegeConstants.GET_GLOBAL_PROPERTIES);
+		}
 		if (StringUtils.isNotBlank(str)) {
 			minLength = Integer.valueOf(str);
 		}
