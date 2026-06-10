@@ -159,6 +159,11 @@
 	
 	<bean id="springController" class="org.springframework.web.servlet.mvc.UrlFilenameViewController" />
 
+	<!-- Suppresses verbose stack-trace disclosure on authorization failures in the legacy UI
+	     controllers (OWASP A05); returns a generic 403 and logs the real cause server-side.
+	     Registered explicitly because the component scan only includes @Controller, not @ControllerAdvice. -->
+	<bean id="legacyUiExceptionAdvice" class="org.openmrs.web.controller.LegacyUiExceptionAdvice" />
+
     <!-- Pages with no controllers - begin -->
 
     <!-- findPatient -->
