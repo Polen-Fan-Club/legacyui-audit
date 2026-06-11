@@ -200,8 +200,7 @@ public class ForgotPasswordFormController extends SimpleFormController {
 						
 						// Audit-logging (NEN 8.15): record THAT a forgot-password reset succeeded and for whom -
 						// never the generated password, never the secret answer.
-						log.info("AUDIT password reset via secret question | target=" + username
-						        + " | endpoint=/forgotPassword.form | ip=" + ipAddress);
+						log.warn("AUDIT PASSWORD_RESET user=" + username + " outcome=SUCCESS");
 						
 						httpSession.setAttribute("resetPassword", randomPassword);
 						httpSession.setAttribute(WebConstants.OPENMRS_MSG_ATTR, "auth.password.reset");
