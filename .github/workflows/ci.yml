@@ -35,6 +35,16 @@ jobs:
         env:
           CI: "true"
 
+      # --- JaCoCo coverage-rapport als CI-artifact (sprint 3, punt 4) ---
+      # Het rapport wordt al door 'mvn clean install' gegenereerd (jacoco report-goal
+      # in de test-fase van omod). Hier publiceren we het als artefact.
+      - name: Upload JaCoCo coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-coverage
+          path: omod/target/site/jacoco/
+          if-no-files-found: error
+
       # --- SBOM (CycloneDX) als CI-artifact: eindcheck sprint 1 ---
       # outputDirectory expliciet gezet zodat de parent-pom de output niet
       # naar target/classes/META-INF/sbom/ kan verleggen (bekend gedrag bij
