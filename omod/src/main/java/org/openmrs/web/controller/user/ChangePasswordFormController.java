@@ -113,8 +113,7 @@ public class ChangePasswordFormController {
 		
 		changeUserPasswordAndQuestion(user, oldPassword, newPassword, newQuestionAnswer);
 		// Audit-logging (NEN 8.15): record THAT a self password change happened and for whom - never the value.
-		log.info("AUDIT password change (self) | actor=" + userLabel(user) + " | endpoint=/admin/users/changePassword.form"
-		        + " | ip=" + currentClientIp());
+		log.warn("AUDIT PASSWORD_CHANGE user=" + userLabel(user) + " outcome=SUCCESS");
 		httpSession.removeAttribute(WebConstants.OPENMRS_MSG_ATTR);
 		return "redirect:/index.htm";
 		

@@ -166,9 +166,10 @@ public class LoginServlet extends HttpServlet {
 					
 					CurrentUsers.addUser(httpSession, user);
 					
-					// Audit-logging (NEN 8.15-3): successful login on INFO, with the (typed) login name.
+					// Audit-logging (NEN 8.15-3): successful login, with the (typed) login name.
 					// Uses the submitted username because the super-admin account has an empty username field.
-					log.info("AUDIT login success | username=" + username + " | endpoint=/loginServlet | ip=" + ipAddress);
+					String auditUser = (username != null) ? username : "anonymous";
+					log.warn("AUDIT LOGIN_SUCCESS user=" + auditUser + " ip=" + ipAddress + " outcome=SUCCESS");
 					
 					if (log.isDebugEnabled()) {
 						log.debug("Redirecting after login to: " + redirect);
@@ -198,8 +199,8 @@ public class LoginServlet extends HttpServlet {
 				// to try again
 				httpSession.setAttribute(WebConstants.OPENMRS_ERROR_ATTR, "auth.password.invalid");
 				// Audit-logging (NEN 8.15-4): failed login attempt with username + client-IP, no password.
-				log.info("AUDIT login failed | username=" + request.getParameter("uname") + " | endpoint=/loginServlet"
-				        + " | ip=" + ipAddress);
+				String auditUser = (request.getParameter("uname") != null) ? request.getParameter("uname") : "anonymous";
+				log.warn("AUDIT LOGIN_FAILED user=" + auditUser + " ip=" + ipAddress + " outcome=FAILURE");
 			}
 			
 		}

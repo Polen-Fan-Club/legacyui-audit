@@ -175,8 +175,7 @@ public class UserFormController {
 			// capture the actor before becomeUser swaps the authenticated user to the target
 			String auditActor = userLabel(Context.getAuthenticatedUser());
 			Context.becomeUser(user.getSystemId());
-			log.info("AUDIT impersonation becomeUser | actor=" + auditActor + " | target=systemId:" + user.getSystemId()
-			        + " | endpoint=/admin/users/user.form | ip=" + auditIp);
+			log.warn("AUDIT USER_IMPERSONATE actor=" + auditActor + " targetUser=" + userLabel(user) + " outcome=SUCCESS");
 			httpSession.setAttribute(WebConstants.OPENMRS_MSG_ATTR, "User.assumeIdentity.success");
 			httpSession.setAttribute(WebConstants.OPENMRS_MSG_ARGS, user.getPersonName());
 			return "redirect:/index.htm";
@@ -184,8 +183,7 @@ public class UserFormController {
 		} else if (mss.getMessage("User.delete").equals(action)) {
 			try {
 				Context.getUserService().purgeUser(user);
-				log.info("AUDIT user purge (hard delete) | actor=" + userLabel(Context.getAuthenticatedUser())
-				        + " | target=" + userLabel(user) + " | endpoint=/admin/users/user.form | ip=" + auditIp);
+				log.warn("AUDIT USER_PURGE actor=" + userLabel(Context.getAuthenticatedUser()) + " targetUser=" + userLabel(user) + " outcome=SUCCESS");
 				httpSession.setAttribute(WebConstants.OPENMRS_MSG_ATTR, "User.delete.success");
 				return "redirect:users.list";
 			}
@@ -202,8 +200,7 @@ public class UserFormController {
 				return showForm(user.getUserId(), createNewPerson, user, model);
 			} else {
 				us.retireUser(user, retireReason);
-				log.info("AUDIT user retire (soft delete) | actor=" + userLabel(Context.getAuthenticatedUser())
-				        + " | target=" + userLabel(user) + " | endpoint=/admin/users/user.form | ip=" + auditIp);
+				log.warn("AUDIT USER_RETIRE actor=" + userLabel(Context.getAuthenticatedUser()) + " targetUser=" + userLabel(user) + " outcome=SUCCESS");
 				httpSession.setAttribute(WebConstants.OPENMRS_MSG_ATTR, "User.retiredMessage");
 			}
 			
@@ -298,22 +295,17 @@ public class UserFormController {
 			
 			if (isNewUser(user)) {
 				us.createUser(user, password);
-				log.info("AUDIT user create | actor=" + userLabel(Context.getAuthenticatedUser()) + " | target="
-				        + userLabel(user) + " | roles=" + roleNames(user) + " | endpoint=/admin/users/user.form | ip="
-				        + auditIp);
+				log.warn("AUDIT USER_CREATE actor=" + userLabel(Context.getAuthenticatedUser()) + " targetUser=" + userLabel(user) + " outcome=SUCCESS");
 			} else {
 				us.saveUser(user);
-				log.info("AUDIT user update (roles/properties) | actor=" + userLabel(Context.getAuthenticatedUser())
-				        + " | target=" + userLabel(user) + " | roles=" + roleNames(user)
-				        + " | endpoint=/admin/users/user.form | ip=" + auditIp);
+				log.warn("AUDIT USER_ROLES_CHANGED actor=" + userLabel(Context.getAuthenticatedUser()) + " targetUser=" + userLabel(user) + " roles=" + roleNames(user) + " outcome=SUCCESS");
 				
 				if (!"".equals(password) && Context.hasPrivilege(PrivilegeConstants.EDIT_USER_PASSWORDS)) {
 					if (log.isDebugEnabled()) {
 						log.debug("calling changePassword for user " + user + " by user " + Context.getAuthenticatedUser());
 					}
 					us.changePassword(user, oldPassword, password);
-					log.info("AUDIT password change (admin-set) | actor=" + userLabel(Context.getAuthenticatedUser())
-					        + " | target=" + userLabel(user) + " | endpoint=/admin/users/user.form | ip=" + auditIp);
+					log.warn("AUDIT PASSWORD_CHANGE actor=" + userLabel(Context.getAuthenticatedUser()) + " targetUser=" + userLabel(user) + " outcome=SUCCESS");
 				}
 			}
 			

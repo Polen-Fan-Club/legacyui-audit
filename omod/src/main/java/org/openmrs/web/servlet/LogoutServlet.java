@@ -49,7 +49,7 @@ public class LogoutServlet extends HttpServlet {
 		User user = Context.getAuthenticatedUser();
 		String actor = (user == null) ? "anonymous" : (user.getUsername() != null && !user.getUsername().isEmpty() ? user
 		        .getUsername() : "systemId:" + user.getSystemId());
-		log.info("AUDIT logout | actor=" + actor + " | endpoint=/logout | ip=" + request.getRemoteAddr());
+		log.warn("AUDIT LOGOUT user=" + actor + " ip=" + request.getRemoteAddr() + " outcome=SUCCESS");
 		
 		Context.logout();
 		
