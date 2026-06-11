@@ -124,7 +124,11 @@ public class AuditLoggingTest extends BaseModuleWebContextSensitiveTest {
 		WebRequest request = new ServletWebRequest(new MockHttpServletRequest());
 		User newUser = userFormController.formBackingObject(request, null);
 		newUser.setUsername("auditTest" + System.currentTimeMillis());
-		newUser.addName(new PersonName("Audit", "Test", "Logger"));
+		// Update the PersonName that formBackingObject already added (avoid two names, one empty,
+		// which would cause PersonNameValidator to fail and prevent createUser from being reached)
+		PersonName pName = newUser.getPerson().getPersonName();
+		pName.setGivenName("Audit");
+		pName.setFamilyName("Logger");
 		newUser.getPerson().setGender("F");
 
 		userFormController.handleSubmission(
