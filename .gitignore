@@ -82,3 +82,8 @@ nb-configuration.xml
 
 # Temp Files #
 temp/
+
+# Pentest testlab-artefacten (verlopen sessietokens / archieven)
+cookies-*.txt
+jar-*.txt
+docs/pentest-bewijs/*.zip
