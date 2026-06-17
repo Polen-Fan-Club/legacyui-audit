@@ -21,6 +21,20 @@ Een teamlid beoordeelt elke finding; de pipeline breekt niet automatisch op find
 
 **Regel: geen onderdrukking zonder schriftelijke onderbouwing.**
 
+## Categorieën van false positives
+
+Een finding krijgt de status **False positive** als aan één van de volgende criteria voldaan is. Per suppression in de `.snyk`-policyfile of Dependabot-dismiss wordt de categorie expliciet benoemd.
+
+| Categorie | Definitie | Toewijzingscriterium |
+|---|---|---|
+| **Unreachable code** | De kwetsbare coderegel of -methode is in de module niet aanroepbaar via enig uitvoerpad. | Statische analyse (CodeQL-call-graph, handmatige trace) toont aan dat de aanroep van buitenaf niet mogelijk is. Code-geverifieerd, niet aangenomen. |
+| **Parameterized queries** | SCA/SAST rapporteert SQL-injection maar alle databaseaanroepen gebruiken aantoonbaar geparametriseerde queries of ORM-binding. | Grep op de aangemerkte klasse bevestigt uitsluitend gebruik van `PreparedStatement`, Hibernate-HQL-parameters of equivalente binding; geen directe stringconcatenatie in SQL. |
+| **Sanitization buiten scope** | De input-validatie of escaping vindt plaats in een laag die buiten de auditscope valt (bijv. openmrs-core-framework of de JSP-taglib) maar wél effectief is. | Scope-grens gedocumenteerd (`scope-context.md`); de sanitization is verifieerbaar actief (code-referentie of test). |
+| **Component niet in runtime** | Een kwetsbaar component staat in de SBOM maar wordt niet meegeladen in de runtime van de legacyui-module (bijv. test-scope, provided-scope zonder gebruik). | Maven-scope `test` of `provided` geverifieerd in `pom.xml`; geen runtime-aanroep aantoonbaar via dependency-trace. |
+| **Vendor heeft al gepatcht** | De CVE is gerapporteerd voor een versie die de module gebruikt, maar de vendor heeft een patch uitgebracht die via de gekozen upgrade-route direct beschikbaar is én geen buildbreuk veroorzaakt. | CVE-status in NVD: "Analyzed" met fix-versie ≤ beschikbare upgrade; CI-build slaagt op de gepatchte versie. Patchdatum vastleggen. |
+
+**Regel:** een false positive zonder gedocumenteerde categorie en code-bewijs wordt behandeld als Accept (reëel, niet exploiteerbaar) — nooit stilzwijgend weggelaten.
+
 ## Prioritering
 
 CVSS-score × kritiekheid van het systeem (WS02). Concrete deadlines komen uit de risicobereidheid/grenswaarden van punt 1; dit document verwijst ernaar en herhaalt ze niet.
