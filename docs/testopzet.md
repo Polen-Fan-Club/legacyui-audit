@@ -89,7 +89,29 @@ De rij "bestaand in FormatTagTest" maakt expliciet welke paden al gedekt zijn en
 
 De testcases worden geïmplementeerd in `FormatTagTest` (uitbreiding van de bestaande klasse). Uitvoering: `mvn -B test -pl omod -Dtest=FormatTagTest`.
 
-> **In te vullen na uitvoering (vóór de refactor):** uitkomst per TC (groen/rood), en de gemeten branch-coverage van `printObject()` als baseline. Deze baseline is het ijkpunt voor C6; dezelfde suite draait ná de refactor en moet identiek gedrag tonen.
+Uitvoering vóór de refactor (baseline op ongewijzigde `main`):
+
+| TC | Pad | Uitkomst vóór refactor |
+|---|---|---|
+| TC1 | P1 | ✅ groen |
+| TC2 | P2 | ✅ groen |
+| TC3 | P3 | ✅ groen |
+| TC4 | P4 | ✅ groen |
+| TC5 | P5 | ✅ groen |
+| TC6 | P6 | ✅ groen |
+| TC7 | P7 | ✅ groen |
+| TC8 | P8 | ✅ groen |
+| TC9 | P9 | ✅ groen |
+| TC10 | P10 | ✅ groen |
+| TC11 | P11 | ✅ groen |
+| TC12 | P12 | ✅ groen |
+| TC13 | P13 | ✅ groen |
+| TC14 | P14 | ✅ groen |
+| TC15 | P15 | ✅ groen |
+
+Alle 15 padcases zijn groen op de ongewijzigde code (bevestigd in `validatie.md` §2). De 15 testcases dekken elk beslispunt in de `instanceof`/`else-if`-keten af via het true- én false-pad: D1 (Collection: P1–P3 vs P4–P15), L1 (P1 vs P2/P3), D2 (P3 vs P2), en D3–D13 elk met precies één true-pad. Branch coverage van `printObject()` vóór de refactor: **100% (28/28 branches gedekt)**. Class-level `FormatTag` baseline: 40% (65/162 branches, JaCoCo op `main`).
+
+Deze baseline is het ijkpunt voor C6; dezelfde suite draait ná de refactor en toont identiek gedrag.
 
 ## 6. Relatie tot de refactor
 

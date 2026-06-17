@@ -1,7 +1,7 @@
 # Validatie verbeteringen — testen & regressie
 
 **Datum:** 2026-06-17
-**Branch:** `feat/onderhoudbaarheid-formattag-strategy` t.o.v. `main`
+**Branch/Commit:** `feat/onderhoudbaarheid-formattag-strategy` → gemerged naar `main` via PR #80, commit `a3942bb`
 **Meetinstrumenten:** JaCoCo (coverage + complexity, CI-artifact), handmatige McCabe-telling (consistent met C1)
 **Bron:** `realisatie-poc.md` (C5), `analyse-onderhoudbaarheid.md` (C1)
 

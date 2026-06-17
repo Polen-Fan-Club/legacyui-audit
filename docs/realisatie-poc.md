@@ -1,7 +1,7 @@
 # Realisatie PoC & verantwoording — FormatTag Strategy-refactor
 
 **Datum:** 2026-06-17
-**Branch:** `feat/onderhoudbaarheid-formattag-strategy`
+**Branch/Commit:** `feat/onderhoudbaarheid-formattag-strategy` → gemerged naar `main` via PR #80, commit `a3942bb`
 **Target:** `FormatTag.printObject()` type-dispatch → Strategy-patroon
 **Bron:** `aangepast-ontwerp.md` (C4), `testopzet.md` (C2)
 

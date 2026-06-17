@@ -2,6 +2,8 @@
 
 **Module:** OpenMRS Legacy UI v1.20.0 · **Norm:** NEN-7510:2024-2 · **Vertrouwelijk** · Issue #55
 
+**Algeheel beveiligingsoordeel: AMBER** — de module is aantoonbaar veiliger geworden maar is nog niet productierijp voor een zorgomgeving zonder de geprioriteerde vervolgstappen (zie security backlog P1).
+
 Deze audit beoordeelt de beveiliging van de OpenMRS Legacy UI-module v1.20.0, de weblaag van een elektronisch patiëntdossier, tegen NEN-7510:2024-2. De aanleiding is dat deze module patiëntdossiers en toegangsbeheer verwerkt — data van de hoogste gevoeligheidsklasse — terwijl het een verouderd component betreft.
 
 De audit combineerde een gap-analyse tegen de norm, een attack surface mapping, een penetratietest en een analyse van de afhankelijkheden. Het leidende principe was herleidbaarheid: elke bevinding is van bron tot hertest te volgen via een verifieerbaar artefact, en elk accepteer- of herstelbesluit is genomen tegen vooraf vastgelegde risicocriteria, met een aangescherpte grens voor alles wat patiëntveiligheid raakt.

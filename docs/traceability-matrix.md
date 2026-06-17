@@ -17,10 +17,23 @@ Elke bevinding is herleidbaar van bron tot hertest. CVSS is de technische ernst;
 ² CVSS onderschat deze findings (geen metriek voor auditability-verlies); besluit weegt via NEN en risicocriteria, niet via de score.
 ³ 8.9 zat niet in de gap-analyse-scope (8.3/8.5/8.15); toegevoegd op basis van de pentest. Deel (b) is container-configuratie, buiten de module.
 
+---
+
+## Pipeline- en procescontroles
+
+Aanvullende NEN-7510:2024-2 controls die niet uit pentest-bevindingen voortkomen maar op pipeline- en procesniveau zijn geborgd:
+
+| Control | Maatregel | Vóór (baseline) | Aanpassing | Na (bewijs-artefact) |
+|---|---|---|---|---|
+| **8.28** Veilig coderen | CodeQL SAST-scan op volledige module bij elke PR en wekelijks; SARIF-output als CI-artefact | Geen statische analyse actief | `.github/workflows/codeql.yml` opgezet (sprint 1) | CI-artefact `codeql-sarif` (SARIF 2.1.0, 592 bestanden, 76 security-queries) · `mini-complianceverslag.md` M2 |
+| **8.8** Kwetsbaarhedenbeheer | Snyk SCA wekelijkse scan + Dependabot security-update-PR's | Geen geautomatiseerde dependency-scan | `.github/workflows/snyk-sca.yml` + Dependabot ingeschakeld (sprint 1) | CI-artefact `snyk-sca-report` (128 CVEs vastgesteld) · Dependabot PR's #10–14 · `sbom-supply-chain.md` |
+| **8.25** Beveiliging in de ontwikkelcyclus | Branch protection op `main` (PR verplicht, CI moet groen zijn); SBOM + SAST + SCA in elke build | Geen geformaliseerde secure-pipeline | Pipeline ingericht sprint 1; bewust gedocumenteerd in sprint 2 | `mini-complianceverslag.md` M1–M7 + bewijsregister §5 · commit `10f9a4a` (secrets-hygiëne) · actieve ruleset `main` |
+| **5.35** Naleving en beoordeling | Dit auditrapport zelf vormt de beoordelingsartefact; aanpak vastgelegd in `audit-methodologie.md` | Geen formele auditcyclus | Audit uitgevoerd conform NEN-7510:2024-2 (sprint 1–3) | `docs/bijlagen.md` (index A–W) · `docs/audit-methodologie.md` · `docs/conclusie-advies.md` |
+
 Bewijspaden zijn relatief aan `docs/pentest-bewijs/`. Details per bevinding: `pentestplan.md` §3, resultaten §5.
 
 **T4 — weerlegde hypothese.** Privilege-escalation via controllers bleek niet mogelijk: de service-laag-AOP weigert vóór verwerking. Geen bevinding; bewijs in `T4/`.
 
 **Deployment-voorwaarde.** #5 vereist een actieve `ForcePasswordChangeFilter`; zonder die configuratie werkt de fix niet in productie (`pentestplan.md` §4). De eerdere #3-voorwaarde rond het legacyui-logniveau is achterhaald sinds `0421a10`: de audit-events loggen nu op WARN en zijn zichtbaar onder het default distro-logbeleid.
 
-**NEN-dekking:** 8.3, 8.5, 8.9, 8.15 (eis: ≥3 controls).
+**NEN-dekking (pentest-bevindingen):** 8.3, 8.5, 8.9, 8.15 · **NEN-dekking (pipeline/proces):** 8.28, 8.8, 8.25, 5.35 · **Totaal: 8 controls gedekt.**
