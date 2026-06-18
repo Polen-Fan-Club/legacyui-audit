@@ -42,7 +42,7 @@ Index van het bewijsmateriaal. Elke bijlage is een artefact in de repository; de
 | Q. Triagebeleid | Fix/Accept/False positive/Defer + onderdrukkingsregels | `docs/false-positive-beleid.md` |
 | R. Security backlog | Geprioriteerde vervolgmaatregelen (P1/P2/P3) | `docs/security-backlog.md` |
 | S. CI/CD-risico-evaluatie | Risico's in het pipelineproces | `docs/cicd-risico-evaluatie.md` |
-| T. Mini-complianceverslag | Beheersmaatregelen M1–M5 (SBOM, CodeQL, Dependabot, branch protection, OTAP) | `docs/mini-complianceverslag.md` |
+| T. Mini-complianceverslag | Beheersmaatregelen M1–M8 (SBOM, CodeQL, Dependabot, branch protection, OTAP) | `docs/mini-complianceverslag.md` |
 
 ## Compliance-kaders
 

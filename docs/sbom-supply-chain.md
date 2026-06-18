@@ -8,7 +8,7 @@ Bij elke CI-build genereert de pipeline een Software Bill of Materials in Cyclon
 
 ## Kwetsbaarheden in afhankelijkheden
 
-Snyk SCA identificeert 128 unieke kwetsbaarheden in de afhankelijkheden, waarvan 6 critical en 60 high. Per losse CVE is dat aantal niet werkbaar; de bevindingen zijn daarom per pakket geclusterd. Veel kwetsbaarheden zitten transitief via `openmrs-api` in de provided-scope, waardoor de feitelijke exploiteerbaarheid binnen deze module per cluster geverifieerd moet worden vóór patchen (`risk-assessment-report.md` §3b).
+Snyk SCA identificeert 128 unieke kwetsbaarheden in de afhankelijkheden, verdeeld over 6 critical, 60 high, 51 medium en 11 low. Deze 128 unieke kwetsbaarheden komen via 304 kwetsbare paden voor (dezelfde kwetsbaarheid via meerdere dependency-paden), gemeten over 3 gescande projecten (root/api/omod). Bron: Snyk SCA-run #121 op `main` (commit `c8d5a5b`), artefact `snyk-sca-report`. Per losse CVE is dat aantal niet werkbaar; de bevindingen zijn daarom per pakket geclusterd. Veel kwetsbaarheden zitten transitief via `openmrs-api` in de provided-scope, waardoor de feitelijke exploiteerbaarheid binnen deze module per cluster geverifieerd moet worden vóór patchen (`risk-assessment-report.md` §3b).
 
 | Pakket | Vulns | Hoogste | Upgrade? | Advies |
 |---|---|---|---|---|
