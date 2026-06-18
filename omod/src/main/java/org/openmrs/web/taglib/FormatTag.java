@@ -11,10 +11,8 @@ package org.openmrs.web.taglib;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -26,8 +24,6 @@ import org.apache.commons.lang.WordUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.openmrs.Concept;
-import org.openmrs.ConceptName;
-import org.openmrs.ConceptNameTag;
 import org.openmrs.Encounter;
 import org.openmrs.EncounterRole;
 import org.openmrs.EncounterType;
@@ -43,18 +39,9 @@ import org.openmrs.User;
 import org.openmrs.Visit;
 import org.openmrs.VisitType;
 import org.openmrs.api.AdministrationService;
-import org.openmrs.api.ConceptNameType;
 import org.openmrs.api.context.Context;
-import org.openmrs.customdatatype.CustomDatatype;
-import org.openmrs.customdatatype.CustomDatatype.Summary;
-import org.openmrs.customdatatype.CustomDatatypeHandler;
-import org.openmrs.customdatatype.CustomDatatypeUtil;
-import org.openmrs.customdatatype.CustomValueDescriptor;
-import org.openmrs.customdatatype.DownloadableDatatypeHandler;
 import org.openmrs.customdatatype.SingleCustomValue;
 import org.openmrs.util.OpenmrsConstants;
-import org.openmrs.web.attribute.handler.HtmlDisplayableDatatypeHandler;
-import org.springframework.web.util.HtmlUtils;
 import org.springframework.web.util.JavaScriptUtils;
 
 /**
@@ -138,6 +125,8 @@ public class FormatTag extends TagSupport {
 	 * @since 1.10
 	 */
 	private String caseConversion;
+	
+	private final FormatStrategyRegistry registry = new FormatStrategyRegistry();
 	
 	@Override
 	public int doStartTag() {
@@ -275,31 +264,19 @@ public class FormatTag extends TagSupport {
 					sb.append(", ");
 				}
 			}
-		} else if (o instanceof Date) {
-			printDate(sb, (Date) o);
-		} else if (o instanceof Concept) {
-			printConcept(sb, (Concept) o);
-		} else if (o instanceof Obs) {
-			sb.append(StringEscapeUtils.escapeHtml(((Obs) o).getValueAsString(Context.getLocale())));
-		} else if (o instanceof User) {
-			printUser(sb, (User) o);
-		} else if (o instanceof Encounter) {
-			printEncounter(sb, (Encounter) o);
-		} else if (o instanceof Visit) {
-			printVisit(sb, (Visit) o);
-		} else if (o instanceof Program) {
-			printProgram(sb, (Program) o);
-		} else if (o instanceof Provider) {
-			printProvider(sb, (Provider) o);
-		} else if (o instanceof Form) {
-			printForm(sb, (Form) o);
-		} else if (o instanceof SingleCustomValue<?>) {
-			printSingleCustomValue(sb, (SingleCustomValue<?>) o);
-		} else if (o instanceof OpenmrsMetadata) {
-			printMetadata(sb, (OpenmrsMetadata) o);
-		} else {
-			sb.append("" + StringEscapeUtils.escapeHtml(o.toString()));
+			return;
 		}
+		registry.resolve(o).format(sb, o, newContext());
+	}
+	
+	/**
+	 * Builds a {@link FormatContext} snapshot of the tag state that the strategies need.
+	 * 
+	 * @return a context carrying the concept-name selectors, the case conversion setting and the
+	 *         current locale
+	 */
+	private FormatContext newContext() {
+		return new FormatContext(withConceptNameType, withConceptNameTag, caseConversion, Context.getLocale());
 	}
 	
 	/**
@@ -309,12 +286,7 @@ public class FormatTag extends TagSupport {
 	 * @param encounter the encounter to print
 	 */
 	private void printEncounter(StringBuilder sb, Encounter encounter) {
-		printMetadata(sb, encounter.getEncounterType());
-		sb.append(" @");
-		printMetadata(sb, encounter.getLocation());
-		sb.append(" | ");
-		printDate(sb, encounter.getEncounterDatetime());
-		sb.append(" | ");
+		registry.resolve(encounter).format(sb, encounter, newContext());
 	}
 	
 	/**
@@ -324,11 +296,7 @@ public class FormatTag extends TagSupport {
 	 * @param visit the visit object to print
 	 */
 	private void printVisit(StringBuilder sb, Visit visit) {
-		printMetadata(sb, visit.getVisitType());
-		sb.append(" @");
-		printMetadata(sb, visit.getLocation());
-		sb.append(" | ");
-		printDate(sb, visit.getStartDatetime());
+		registry.resolve(visit).format(sb, visit, newContext());
 	}
 	
 	/**
@@ -338,11 +306,7 @@ public class FormatTag extends TagSupport {
 	 * @param program the program object to print
 	 */
 	private void printProgram(StringBuilder sb, Program program) {
-		if (StringUtils.isNotEmpty(program.getName())) {
-			printMetadata(sb, program);
-		} else if (program.getConcept() != null) {
-			printConcept(sb, program.getConcept());
-		}
+		registry.resolve(program).format(sb, program, newContext());
 	}
 	
 	/**
@@ -352,8 +316,7 @@ public class FormatTag extends TagSupport {
 	 * @param form
 	 */
 	private void printForm(StringBuilder sb, Form form) {
-		String name = StringEscapeUtils.escapeHtml(form.getName());
-		sb.append(name + StringEscapeUtils.escapeHtml(" (v" + form.getVersion() + ")"));
+		registry.resolve(form).format(sb, form, newContext());
 	}
 	
 	/**
@@ -362,45 +325,8 @@ public class FormatTag extends TagSupport {
 	 * @param sb
 	 * @param val
 	 */
-	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private void printSingleCustomValue(StringBuilder sb, SingleCustomValue<?> val) {
-		CustomValueDescriptor descriptor = val.getDescriptor();
-		CustomDatatype<?> datatype = CustomDatatypeUtil.getDatatype(descriptor);
-		CustomDatatypeHandler handler = CustomDatatypeUtil.getHandler(descriptor);
-		if (handler != null && handler instanceof HtmlDisplayableDatatypeHandler) {
-			Summary summary = ((HtmlDisplayableDatatypeHandler) handler).toHtmlSummary(datatype, val.getValueReference());
-			if (summary.isComplete()) {
-				sb.append(StringEscapeUtils.escapeHtml(summary.toString()));
-			} else {
-				sb.append(StringEscapeUtils.escapeHtml(summary.toString()));
-				sb.append("...");
-				String link = "viewCustomValue.form?handler=" + handler.getClass().getName() + "&datatype="
-				        + datatype.getClass().getName() + "&value=" + StringEscapeUtils.escapeHtml(val.getValueReference());
-				sb.append(" (<a target=\"_blank\" href=\"" + link + "\">"
-				        + Context.getMessageSourceService().getMessage("general.view") + "</a>)");
-				
-				if (handler instanceof DownloadableDatatypeHandler) {
-					link = "downloadCustomValue.form?handler=" + handler.getClass().getName() + "&datatype="
-					        + datatype.getClass().getName() + "&value="
-					        + StringEscapeUtils.escapeHtml(val.getValueReference());
-					sb.append(" (<a href=\"" + link + "\">"
-					        + Context.getMessageSourceService().getMessage("general.download") + "</a>)");
-				}
-			}
-		} else if (datatype != null) {
-			Summary summary = datatype.getTextSummary(val.getValueReference());
-			if (summary.isComplete()) {
-				sb.append(StringEscapeUtils.escapeHtml(summary.toString()));
-			} else {
-				sb.append(StringEscapeUtils.escapeHtml(summary.toString()));
-				sb.append("...");
-			}
-		} else {
-			sb.append(StringEscapeUtils.escapeHtml(Context.getMessageSourceService().getMessage(
-			    "CustomDatatype.error.missingDatatype", new Object[] { descriptor.getDatatypeClassname() },
-			    Context.getLocale())));
-			sb.append(StringEscapeUtils.escapeHtml(val.getValueReference()));
-		}
+		registry.resolve(val).format(sb, val, newContext());
 	}
 	
 	/**
@@ -413,43 +339,7 @@ public class FormatTag extends TagSupport {
 	 * @should escape html tags
 	 */
 	protected void printConcept(StringBuilder sb, Concept concept) {
-		Locale loc = Context.getLocale();
-		
-		if (withConceptNameType != null || withConceptNameTag != null) {
-			ConceptNameType lookForNameType = null;
-			
-			if (withConceptNameType != null) {
-				lookForNameType = ConceptNameType.valueOf(withConceptNameType);
-			}
-			
-			ConceptNameTag lookForNameTag = null;
-			if (withConceptNameTag != null) {
-				lookForNameTag = Context.getConceptService().getConceptNameTagByName(withConceptNameTag);
-			}
-			
-			ConceptName name = concept.getName(loc, lookForNameType, lookForNameTag);
-			if (name != null) {
-				sb.append(applyConversion(HtmlUtils.htmlEscape(name.getName())));
-				return;
-			}
-		}
-		
-		ConceptName name = concept.getPreferredName(loc);
-		if (name != null) {
-			sb.append(applyConversion(HtmlUtils.htmlEscape(name.getName())));
-			return;
-		}
-		sb.append(applyConversion(HtmlUtils.htmlEscape(concept.getDisplayString())));
-	}
-	
-	/**
-	 * formats a date and prints it to sb
-	 * 
-	 * @param sb
-	 * @param date
-	 */
-	private void printDate(StringBuilder sb, Date date) {
-		sb.append(Context.getDateFormat().format(date));
+		registry.resolve(concept).format(sb, concept, newContext());
 	}
 	
 	/**
@@ -487,7 +377,7 @@ public class FormatTag extends TagSupport {
 	 */
 	private void printMetadata(StringBuilder sb, OpenmrsMetadata metadata) {
 		if (metadata != null) {
-			sb.append(applyConversion(StringEscapeUtils.escapeHtml(metadata.getName())));
+			registry.resolve(metadata).format(sb, metadata, newContext());
 		}
 	}
 	
@@ -522,16 +412,7 @@ public class FormatTag extends TagSupport {
 	 * @param u
 	 */
 	private void printUser(StringBuilder sb, User u) {
-		sb.append("<span class=\"user\">");
-		sb.append("<span class=\"username\">");
-		sb.append(StringEscapeUtils.escapeHtml(u.getUsername()));
-		sb.append("</span>");
-		if (u.getPerson() != null) {
-			sb.append("<span class=\"personName\">");
-			sb.append(" (").append(StringEscapeUtils.escapeHtml(u.getPersonName().getFullName())).append(")");
-			sb.append("</span>");
-		}
-		sb.append("</span>");
+		registry.resolve(u).format(sb, u, newContext());
 	}
 	
 	/**
@@ -554,7 +435,7 @@ public class FormatTag extends TagSupport {
 	 */
 	private void printProvider(StringBuilder sb, Provider p) {
 		if (p != null) {
-			sb.append(StringEscapeUtils.escapeHtml(getProviderName(p)));
+			registry.resolve(p).format(sb, p, newContext());
 		}
 	}
 	

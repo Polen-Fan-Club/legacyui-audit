@@ -9,6 +9,13 @@
  */
 package org.openmrs.web.taglib;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 import javax.servlet.jsp.PageContext;
@@ -21,10 +28,18 @@ import org.openmrs.Concept;
 import org.openmrs.ConceptDescription;
 import org.openmrs.ConceptName;
 import org.openmrs.ConceptNameTag;
+import org.openmrs.GlobalProperty;
+import org.openmrs.Location;
+import org.openmrs.Person;
+import org.openmrs.PersonName;
+import org.openmrs.Provider;
 import org.openmrs.api.ConceptNameType;
 import org.openmrs.api.ConceptService;
 import org.openmrs.api.context.Context;
+import org.openmrs.customdatatype.CustomValueDescriptor;
+import org.openmrs.customdatatype.SingleCustomValue;
 import org.openmrs.test.Verifies;
+import org.openmrs.util.OpenmrsConstants;
 import org.openmrs.web.test.BaseModuleWebContextSensitiveTest;
 import org.springframework.mock.web.MockPageContext;
 
@@ -182,5 +197,134 @@ public class FormatTagTest extends BaseModuleWebContextSensitiveTest {
 		Assert.assertEquals(Tag.SKIP_BODY, tag.doStartTag());
 		Assert.assertNotNull(pageContext.getAttribute(ATTRIBUTE_OBJECT_VALUE));
 		Assert.assertEquals(expected, pageContext.getAttribute(ATTRIBUTE_OBJECT_VALUE));
+	}
+	
+	/**
+	 * Renders an object through the public tag API ({@link FormatTag#doStartTag()}) and returns the
+	 * value that gets stored in the page-context var attribute. This exercises the same code path
+	 * that JSP templates use, so it validates the observable behaviour of {@code printObject()}
+	 * without touching the private method directly.
+	 * 
+	 * @param tag the format tag to evaluate (caller may pre-configure attributes such as
+	 *            caseConversion)
+	 * @param object the object to format
+	 * @return the rendered string
+	 */
+	private String render(FormatTag tag, Object object) {
+		MockPageContext pageContext = new MockPageContext();
+		tag.setPageContext(pageContext);
+		tag.setVar(ATTRIBUTE_OBJECT_VALUE);
+		tag.setObject(object);
+		Assert.assertEquals(Tag.SKIP_BODY, tag.doStartTag());
+		return (String) pageContext.getAttribute(ATTRIBUTE_OBJECT_VALUE);
+	}
+	
+	/**
+	 * TC1 / P1: an empty collection iterates zero times and renders to an empty string.
+	 * 
+	 * @see FormatTag#doStartTag()
+	 */
+	@Test
+	public void doStartTag_shouldRenderEmptyCollectionAsEmptyString() throws Exception {
+		Assert.assertEquals("", render(new FormatTag(), new ArrayList<Object>()));
+	}
+	
+	/**
+	 * TC2 / P2: a collection with a single element renders that element with no separator.
+	 * 
+	 * @see FormatTag#doStartTag()
+	 */
+	@Test
+	public void doStartTag_shouldRenderSingleElementCollectionWithoutSeparator() throws Exception {
+		List<Concept> concepts = Arrays.asList(Context.getConceptService().getConcept(3));
+		Assert.assertEquals("COUGH SYRUP", render(new FormatTag(), concepts));
+	}
+	
+	/**
+	 * TC3 / P3: a collection with multiple elements renders each element separated by ", ".
+	 * 
+	 * @see FormatTag#doStartTag()
+	 */
+	@Test
+	public void doStartTag_shouldRenderCollectionElementsSeparatedByComma() throws Exception {
+		Concept coughSyrup = Context.getConceptService().getConcept(3);
+		List<Concept> concepts = Arrays.asList(coughSyrup, coughSyrup);
+		Assert.assertEquals("COUGH SYRUP, COUGH SYRUP", render(new FormatTag(), concepts));
+	}
+	
+	/**
+	 * TC4 / P4: a Date is rendered through {@code printDate} using the context date format.
+	 * 
+	 * @see FormatTag#doStartTag()
+	 */
+	@Test
+	public void doStartTag_shouldRenderDateUsingContextDateFormat() throws Exception {
+		Date date = new Date(0L);
+		String expected = Context.getDateFormat().format(date);
+		Assert.assertEquals(expected, render(new FormatTag(), date));
+	}
+	
+	/**
+	 * TC11 / P11: a Provider without an associated person is rendered using its name, HTML-escaped.
+	 * 
+	 * @see FormatTag#doStartTag()
+	 */
+	@Test
+	public void doStartTag_shouldRenderProviderName() throws Exception {
+		Person person = new Person();
+		person.addName(new PersonName("Jane", null, "Provider"));
+		Provider provider = new Provider();
+		provider.setPerson(person);
+		Assert.assertEquals("Jane Provider", render(new FormatTag(), provider));
+	}
+	
+	/**
+	 * TC13 / P13: a SingleCustomValue is rendered through {@code printSingleCustomValue}. A
+	 * FreeTextDatatype produces a complete text summary equal to the value reference, HTML-escaped.
+	 * 
+	 * @see FormatTag#doStartTag()
+	 */
+	@Test
+	public void doStartTag_shouldRenderSingleCustomValue() throws Exception {
+		CustomValueDescriptor descriptor = mock(CustomValueDescriptor.class);
+		when(descriptor.getDatatypeClassname()).thenReturn("org.openmrs.customdatatype.datatype.FreeTextDatatype");
+		when(descriptor.getDatatypeConfig()).thenReturn(null);
+		when(descriptor.getPreferredHandlerClassname()).thenReturn(null);
+		when(descriptor.getHandlerConfig()).thenReturn(null);
+		
+		SingleCustomValue<?> value = mock(SingleCustomValue.class);
+		when(value.getDescriptor()).thenReturn((CustomValueDescriptor) descriptor);
+		when(value.getValueReference()).thenReturn("plain text value");
+		
+		Assert.assertEquals("plain text value", render(new FormatTag(), value));
+	}
+	
+	/**
+	 * TC15 / P15: an object of an unsupported type falls through to the else-branch and is rendered
+	 * via {@code toString()}, HTML-escaped.
+	 * 
+	 * @see FormatTag#doStartTag()
+	 */
+	@Test
+	public void doStartTag_shouldRenderUnknownTypeViaToString() throws Exception {
+		Assert.assertEquals("42", render(new FormatTag(), Integer.valueOf(42)));
+	}
+	
+	/**
+	 * Covers the stateful caseConversion="global" route in {@code applyConversion}: it resolves the
+	 * configured global property and applies it. This is the only mutating path that the Strategy
+	 * refactor touches, so it must be pinned before refactoring.
+	 * 
+	 * @see FormatTag#doStartTag()
+	 */
+	@Test
+	public void doStartTag_shouldApplyGlobalCaseConversionToMetadata() throws Exception {
+		Context.getAdministrationService().saveGlobalProperty(
+		    new GlobalProperty(OpenmrsConstants.GP_DASHBOARD_METADATA_CASE_CONVERSION, "uppercase"));
+		
+		Location location = Context.getLocationService().getLocation(1);
+		FormatTag tag = new FormatTag();
+		tag.setCaseConversion("global");
+		Assert.assertEquals("UNKNOWN LOCATION", render(tag, location));
 	}
 }
