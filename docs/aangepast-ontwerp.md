@@ -70,6 +70,8 @@ private void printObject(StringBuilder sb, Object o) {
 
 `FormatContext` draagt de waarden die de huidige `print*()`-methoden uit de tag-velden lezen (locale, javaScriptEscape, withConceptNameType/-Tag, EncounterRole-filters), zodat de strategies geen verborgen koppeling aan `FormatTag` houden.
 
+> **Realisatienoot — `javaScriptEscape` bewust niet in `FormatContext`.** Bij de realisatie bleek dat geen enkele `print*()`-methode op de `printObject()`-tak `javaScriptEscape` leest; de escaping gebeurt pas in `doStartTag()` op het eindresultaat. Dit veld is daarom bewust uit `FormatContext` gehouden (zie `realisatie-poc.md`, C5). De opsomming hierboven beschrijft het oorspronkelijke ontwerp; de twee documenten spreken elkaar op dit punt dus niet tegen.
+
 **Effect op de kwaliteitskenmerken:**
 - **Open-Closed / Modularity:** een nieuw type = één nieuwe strategy-klasse + één registry-regel. `printObject()` en `doStartTag()` wijzigen niet meer.
 - **Analyzability:** één klasse per type; de opmaaklogica van Concept staat in `ConceptFormatStrategy`, niet verspreid.

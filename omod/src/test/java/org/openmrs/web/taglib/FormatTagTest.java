@@ -327,4 +327,29 @@ public class FormatTagTest extends BaseModuleWebContextSensitiveTest {
 		tag.setCaseConversion("global");
 		Assert.assertEquals("UNKNOWN LOCATION", render(tag, location));
 	}
+	
+	/**
+	 * Guards the stateful "global" case-conversion path when more than one object is formatted in a
+	 * single {@code doStartTag()} call. The concern: {@code applyConversion} resolves and caches
+	 * the "global" setting on first use, so a second object formatted in the same call could
+	 * observe the already-resolved value instead of re-resolving "global". This renders a
+	 * collection of two distinct metadata objects in one tag invocation and asserts both are
+	 * converted, proving the resolution stays correct across objects.
+	 * 
+	 * @see FormatTag#doStartTag()
+	 */
+	@Test
+	public void doStartTag_shouldApplyGlobalCaseConversionToMultipleObjectsInOneTag() throws Exception {
+		Context.getAdministrationService().saveGlobalProperty(
+		    new GlobalProperty(OpenmrsConstants.GP_DASHBOARD_METADATA_CASE_CONVERSION, "uppercase"));
+		
+		Location first = new Location();
+		first.setName("Alpha Ward");
+		Location second = new Location();
+		second.setName("Beta Ward");
+		
+		FormatTag tag = new FormatTag();
+		tag.setCaseConversion("global");
+		Assert.assertEquals("ALPHA WARD, BETA WARD", render(tag, Arrays.asList(first, second)));
+	}
 }
