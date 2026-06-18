@@ -12,7 +12,7 @@ De Cyber Resilience Act stelt eisen aan producten met digitale elementen geduren
 | Vertrouwelijkheid en integriteit van data | Bescherming van verwerkte gegevens | Gedeeltelijk — information disclosure (#6) gemitigeerd; patiëntdata als kroonjuweel geclassificeerd | `traceability-matrix.md`, `cia-biv-analyse.md` |
 | Logging van security-relevante gebeurtenissen | Activiteit registreerbaar en monitorbaar | Voldaan na remediatie — 10 event-types ge-audit-logd (#3), met regressietests | `traceability-matrix.md`, `pentestplan.md` §4 |
 | Minimaliseren van het aanvalsoppervlak | Beperkt en gedocumenteerd aanvalsoppervlak | Gedeeltelijk — aanvalsoppervlak volledig in kaart (34 entry points); reductie is vervolgwerk | `attack-surface-samenvatting.md` |
-| Kwetsbaarhedenbeheer | Identificeren, documenteren, verhelpen | Voldaan op procesniveau — SCA + getrieerde triage met onderbouwing, herleidbaar via `.snyk` | `false-positive-beleid.md`, `sbom-supply-chain.md` |
+| Kwetsbaarhedenbeheer | Identificeren, documenteren, verhelpen | Voldaan op procesniveau — SCA + getrieerde triage met onderbouwing, nu handmatig herleidbaar; `.snyk`-formalisering gepland (B13) | `false-positive-beleid.md`, `sbom-supply-chain.md` |
 | SBOM | Actueel componentenoverzicht | Voldaan — CycloneDX-SBOM uit CI bij elke build | `sbom-supply-chain.md`, `ci.yml` |
 | Beveiligde updates | Mechanisme voor tijdige updates | Gedeeltelijk — Dependabot version-update-PR's actief; productieve update-uitrol buiten scope | `mini-complianceverslag.md` M3 |
 
