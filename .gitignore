@@ -75,3 +75,15 @@ nb-configuration.xml
 /webapp/src/main/webapp/WEB-INF/module_messages*
 /web/WEB-INF/dwr-modules.xml
 #############
+
+# Secrets #
+.env
+!.env.example
+
+# Temp Files #
+temp/
+
+# Pentest testlab-artefacten (verlopen sessietokens / archieven)
+cookies-*.txt
+jar-*.txt
+docs/pentest-bewijs/*.zip

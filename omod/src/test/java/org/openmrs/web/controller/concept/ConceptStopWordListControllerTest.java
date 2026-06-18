@@ -68,7 +68,6 @@ public class ConceptStopWordListControllerTest extends BaseModuleWebContextSensi
 	
 	/**
 	 * @see {@link ConceptStopWordListController#handleSubmission(javax.servlet.http.HttpSession, String[])
-
 	 */
 	@SuppressWarnings("unchecked")
 	@Test
@@ -88,7 +87,6 @@ public class ConceptStopWordListControllerTest extends BaseModuleWebContextSensi
 	
 	/**
 	 * @see {@link ConceptStopWordListController#handleSubmission(javax.servlet.http.HttpSession, String[])
-
 	 */
 	@Test
 	@Verifies(value = "should add the success delete message in session attribute", method = "handleSubmission(HttpSession, String[])")
@@ -110,7 +108,6 @@ public class ConceptStopWordListControllerTest extends BaseModuleWebContextSensi
 	
 	/**
 	 * @see {@link ConceptStopWordListController#handleSubmission(javax.servlet.http.HttpSession, String[])
-
 	 */
 	@Test
 	@Verifies(value = "should add the already deleted error message in session attribute if delete the same word twice", method = "handleSubmission(HttpSession, String[])")

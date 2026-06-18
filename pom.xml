@@ -174,6 +174,8 @@
 							<exclude>license-header.txt</exclude>
 							<exclude>.git/**</exclude>
 							<exclude>tools/formatter/**</exclude>
+							<!-- Pentest-bewijs: rauwe waarnemingen/artefacten (geen broncode), horen geen MPL-header te dragen -->
+							<exclude>docs/**</exclude>
 							<!-- From gitignore -->
 							<exclude>.idea/**</exclude>
 							<exclude>target/**</exclude>
@@ -238,7 +240,7 @@
 				    <artifactId>maven-surefire-plugin</artifactId>
 				    <version>2.22.1</version>
 				    <configuration>
-				    	<argLine>-Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
+				    	<argLine>@{argLine} -Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
 				    </configuration>
 				</plugin>
 			</plugins>

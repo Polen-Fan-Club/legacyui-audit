@@ -20,6 +20,8 @@ import org.openmrs.util.OpenmrsUtil;
 import org.openmrs.util.PrivilegeConstants;
 import org.openmrs.web.WebConstants;
 import org.openmrs.web.user.UserProperties;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.Errors;
@@ -28,6 +30,9 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 /**
  * Used for changing the password when the force password change option is set during a new user
@@ -36,6 +41,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 @Controller
 @RequestMapping(value = "/admin/users/changePassword.form")
 public class ChangePasswordFormController {
+	
+	// SLF4J chosen for this file (gap 8.15-10): the file had no logger, so no Commons Logging to mix with.
+	private static final Logger log = LoggerFactory.getLogger(ChangePasswordFormController.class);
 	
 	/**
 	 * The model from which the data binding happens on the view
@@ -104,9 +112,41 @@ public class ChangePasswordFormController {
 		}
 		
 		changeUserPasswordAndQuestion(user, oldPassword, newPassword, newQuestionAnswer);
+		// Audit-logging (NEN 8.15): record THAT a self password change happened and for whom - never the value.
+		log.warn("AUDIT PASSWORD_CHANGE user=" + userLabel(user) + " outcome=SUCCESS");
 		httpSession.removeAttribute(WebConstants.OPENMRS_MSG_ATTR);
 		return "redirect:/index.htm";
 		
+	}
+	
+	/**
+	 * Audit-log helper (NEN 8.15): a non-sensitive label for a user - the username, or the systemId
+	 * when no username is set. Never returns passwords or secret answers.
+	 * 
+	 * @param user the user to label
+	 * @return a non-sensitive identifier for the audit log
+	 */
+	private static String userLabel(User user) {
+		if (user == null) {
+			return "anonymous";
+		}
+		String username = user.getUsername();
+		return (username != null && !username.isEmpty()) ? username : ("systemId:" + user.getSystemId());
+	}
+	
+	/**
+	 * Audit-log helper (NEN 8.15): the client IP of the current request via the request-bound
+	 * thread, since this controller method has no request parameter. Returns "unknown" outside a
+	 * web request.
+	 * 
+	 * @return the client IP (getRemoteAddr), consistent with the #1 fix, or "unknown"
+	 */
+	private static String currentClientIp() {
+		RequestAttributes attrs = RequestContextHolder.getRequestAttributes();
+		if (attrs instanceof ServletRequestAttributes) {
+			return ((ServletRequestAttributes) attrs).getRequest().getRemoteAddr();
+		}
+		return "unknown";
 	}
 	
 	/**

@@ -39,10 +39,12 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -162,10 +164,18 @@ public class UserFormController {
 		UserService us = Context.getUserService();
 		MessageSourceService mss = Context.getMessageSourceService();
 		
+		// Audit-logging (NEN 8.15): client-IP for the 5 W's; getRemoteAddr() consistent with the #1 fix.
+		// The WebRequest passed by Spring MVC is always a ServletWebRequest at runtime.
+		String auditIp = (request instanceof ServletWebRequest) ? ((ServletWebRequest) request).getRequest().getRemoteAddr()
+		        : "unknown";
+		
 		if (!Context.isAuthenticated()) {
 			errors.reject("auth.invalid");
 		} else if (mss.getMessage("User.assumeIdentity").equals(action)) {
+			// capture the actor before becomeUser swaps the authenticated user to the target
+			String auditActor = userLabel(Context.getAuthenticatedUser());
 			Context.becomeUser(user.getSystemId());
+			log.warn("AUDIT USER_IMPERSONATE actor=" + auditActor + " targetUser=" + userLabel(user) + " outcome=SUCCESS");
 			httpSession.setAttribute(WebConstants.OPENMRS_MSG_ATTR, "User.assumeIdentity.success");
 			httpSession.setAttribute(WebConstants.OPENMRS_MSG_ARGS, user.getPersonName());
 			return "redirect:/index.htm";
@@ -173,6 +183,7 @@ public class UserFormController {
 		} else if (mss.getMessage("User.delete").equals(action)) {
 			try {
 				Context.getUserService().purgeUser(user);
+				log.warn("AUDIT USER_PURGE actor=" + userLabel(Context.getAuthenticatedUser()) + " targetUser=" + userLabel(user) + " outcome=SUCCESS");
 				httpSession.setAttribute(WebConstants.OPENMRS_MSG_ATTR, "User.delete.success");
 				return "redirect:users.list";
 			}
@@ -189,6 +200,7 @@ public class UserFormController {
 				return showForm(user.getUserId(), createNewPerson, user, model);
 			} else {
 				us.retireUser(user, retireReason);
+				log.warn("AUDIT USER_RETIRE actor=" + userLabel(Context.getAuthenticatedUser()) + " targetUser=" + userLabel(user) + " outcome=SUCCESS");
 				httpSession.setAttribute(WebConstants.OPENMRS_MSG_ATTR, "User.retiredMessage");
 			}
 			
@@ -283,14 +295,17 @@ public class UserFormController {
 			
 			if (isNewUser(user)) {
 				us.createUser(user, password);
+				log.warn("AUDIT USER_CREATE actor=" + userLabel(Context.getAuthenticatedUser()) + " targetUser=" + userLabel(user) + " outcome=SUCCESS");
 			} else {
 				us.saveUser(user);
+				log.warn("AUDIT USER_ROLES_CHANGED actor=" + userLabel(Context.getAuthenticatedUser()) + " targetUser=" + userLabel(user) + " roles=" + roleNames(user) + " outcome=SUCCESS");
 				
 				if (!"".equals(password) && Context.hasPrivilege(PrivilegeConstants.EDIT_USER_PASSWORDS)) {
 					if (log.isDebugEnabled()) {
 						log.debug("calling changePassword for user " + user + " by user " + Context.getAuthenticatedUser());
 					}
 					us.changePassword(user, oldPassword, password);
+					log.warn("AUDIT PASSWORD_CHANGE actor=" + userLabel(Context.getAuthenticatedUser()) + " targetUser=" + userLabel(user) + " outcome=SUCCESS");
 				}
 			}
 			
@@ -308,6 +323,38 @@ public class UserFormController {
 			httpSession.setAttribute(WebConstants.OPENMRS_MSG_ATTR, "User.saved");
 		}
 		return "redirect:users.list";
+	}
+	
+	/**
+	 * Audit-log helper (NEN 8.15): a non-sensitive label for a user - the username, or the systemId
+	 * when no username is set. Never returns passwords or secret answers.
+	 * 
+	 * @param user the user to label
+	 * @return a non-sensitive identifier for the audit log
+	 */
+	private static String userLabel(User user) {
+		if (user == null) {
+			return "anonymous";
+		}
+		String username = user.getUsername();
+		return (username != null && !username.isEmpty()) ? username : ("systemId:" + user.getSystemId());
+	}
+	
+	/**
+	 * Audit-log helper (NEN 8.15): the role names assigned to a user (no sensitive content).
+	 * 
+	 * @param user the user whose roles to list
+	 * @return the role names, or [] when none
+	 */
+	private static String roleNames(User user) {
+		if (user == null || user.getRoles() == null) {
+			return "[]";
+		}
+		List<String> names = new ArrayList<String>();
+		for (Role role : user.getRoles()) {
+			names.add(role.getRole());
+		}
+		return names.toString();
 	}
 	
 	/**

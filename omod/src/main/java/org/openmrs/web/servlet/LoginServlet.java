@@ -166,6 +166,11 @@ public class LoginServlet extends HttpServlet {
 					
 					CurrentUsers.addUser(httpSession, user);
 					
+					// Audit-logging (NEN 8.15-3): successful login, with the (typed) login name.
+					// Uses the submitted username because the super-admin account has an empty username field.
+					String auditUser = (username != null) ? username : "anonymous";
+					log.warn("AUDIT LOGIN_SUCCESS user=" + auditUser + " ip=" + ipAddress + " outcome=SUCCESS");
+					
 					if (log.isDebugEnabled()) {
 						log.debug("Redirecting after login to: " + redirect);
 						log.debug("Locale address: " + request.getLocalAddr());
@@ -173,7 +178,12 @@ public class LoginServlet extends HttpServlet {
 					
 					response.sendRedirect(redirect);
 					
-					httpSession.setAttribute(WebConstants.OPENMRS_CLIENT_IP_HTTPSESSION_ATTR, request.getLocalAddr());
+					// Bind the session to the real client (TCP peer) address, not the server's own
+					// address (was request.getLocalAddr()). This must use the same source as
+					// RequireTag, otherwise both values stay equal to the server IP and the
+					// mismatch check there never triggers (gap 8.3-6). X-Forwarded-For is
+					// deliberately not trusted here (no validated trusted-proxy allow-list).
+					httpSession.setAttribute(WebConstants.OPENMRS_CLIENT_IP_HTTPSESSION_ATTR, request.getRemoteAddr());
 					httpSession.removeAttribute(WebConstants.OPENMRS_LOGIN_REDIRECT_HTTPSESSION_ATTR);
 					
 					// unset login attempts by this user because they were
@@ -188,6 +198,9 @@ public class LoginServlet extends HttpServlet {
 				// set the error message for the user telling them
 				// to try again
 				httpSession.setAttribute(WebConstants.OPENMRS_ERROR_ATTR, "auth.password.invalid");
+				// Audit-logging (NEN 8.15-4): failed login attempt with username + client-IP, no password.
+				String auditUser = (request.getParameter("uname") != null) ? request.getParameter("uname") : "anonymous";
+				log.warn("AUDIT LOGIN_FAILED user=" + auditUser + " ip=" + ipAddress + " outcome=FAILURE");
 			}
 			
 		}

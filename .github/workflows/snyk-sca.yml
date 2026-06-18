@@ -1,0 +1,106 @@
+name: Snyk SCA
+
+# SCA-laag 2: Snyk scant alle Maven-dependencies (api/ + omod/) op bekende CVE's
+# en levert een technisch SCA-rapport als CI-artefact.
+#
+# Eis WS04A (Compliance Scanning), "Deel 1 - Scan codebase":
+#   lever als audit trail een "technisch SCA-bestand" op.
+# NEN-7510:2024-2: 8.8 (kwetsbaarheden tijdig identificeren), 5.22.
+#
+# VEREIST: repo-secret SNYK_TOKEN (Settings > Secrets and variables > Actions).
+# Haal het token uit je Snyk-account: https://app.snyk.io/account
+#
+# Bewuste keuze (vgl. codeql.yml): de scan-stap mag NIET de hele run laten falen
+# als er high-severity findings zijn -- anders krijg je geen rapport-artefact,
+# terwijl het rapport juist HET bewijsstuk is. Findings worden beoordeeld via
+# het false-positive-/triage-beleid, niet door de pipeline hard te breken.
+# (Een harde gate kan later alsnog via 'snyk monitor' + branch policy.)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 6 * * 1"   # wekelijks, gelijk met CodeQL
+
+permissions:
+  contents: read
+
+jobs:
+  snyk-sca:
+    name: Snyk dependency scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 8 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "8"
+          cache: maven
+
+      # Snyk leunt op een resolvebare dependency-tree. We bouwen eerst zodat
+      # de OpenMRS-core deps (scope=provided) en alle transitives opgelost zijn.
+      - name: Build (resolve dependencies)
+        run: mvn -B clean install -DskipTests
+        env:
+          CI: "true"
+
+      - name: Set up Node (voor Snyk CLI)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Snyk CLI
+        run: npm install -g snyk
+
+      # JSON-rapport = het herleidbare audit-artefact (technisch SCA-bestand).
+      # --all-projects: scant root + api/ + omod/.
+      # continue-on-error: de run mag niet stoppen als Snyk findings rapporteert
+      #   (exit code 1 = scan OK, kwetsbaarheden gevonden -- dat is verwacht).
+      # 'tee' geeft tegelijk leesbare output in het log EN we forceren exit 0 met
+      #   '|| true' zodat de volgende stappen draaien; de exit-code loggen we apart.
+      - name: Snyk test (JSON-rapport + log)
+        id: snyk
+        continue-on-error: true
+        run: |
+          set +e
+          snyk test \
+            --all-projects \
+            --severity-threshold=low \
+            --json-file-output=snyk-sca-report.json | tee snyk-human.txt
+          echo "SNYK_EXIT=${PIPESTATUS[0]}" | tee -a "$GITHUB_OUTPUT"
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+      # Diagnose: laat zien WELK bestand waar staat. Bij --all-projects kan de
+      # naam/locatie afwijken; zonder deze stap raad je in het duister.
+      - name: Locate SCA report
+        run: |
+          echo "Snyk exit code was: ${{ steps.snyk.outputs.SNYK_EXIT }}"
+          echo "--- JSON-bestanden in workspace ---"
+          ls -la snyk-sca-report.json 2>/dev/null || echo "snyk-sca-report.json NIET op verwachte plek"
+          find . -maxdepth 3 -name "snyk-sca-report*.json" -o -maxdepth 3 -name "*.snyk.json" 2>/dev/null
+
+      # Debug-run ALLEEN als er geen rapport is (exit 2/3 = echte fout, geen findings).
+      - name: Snyk debug (alleen bij ontbrekend rapport)
+        if: ${{ steps.snyk.outputs.SNYK_EXIT != '0' && steps.snyk.outputs.SNYK_EXIT != '1' }}
+        continue-on-error: true
+        run: snyk test --all-projects -d || true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+      # Upload faalt de run NIET als het bestand ontbreekt (warn i.p.v. error):
+      # de scan zelf is het bewijs; een ontbrekend artefact is een aandachtspunt,
+      # geen pipeline-breuk. We pakken ook de leesbare output mee als die er is.
+      - name: Upload Snyk SCA report
+        uses: actions/upload-artifact@v4
+        with:
+          name: snyk-sca-report
+          path: |
+            snyk-sca-report.json
+            snyk-human.txt
+          if-no-files-found: warn

@@ -62,10 +62,12 @@ public class LegacyUIActivator extends BaseModuleActivator {
 	public void stopped() {
 		log.info("Legacy UI Module stopped");
 	}
-
+	
 	// Legacy database migration credentials — used for one-time data migration scripts
 	private static final String MIGRATION_DB_USER = "legacyui_migrate";
+	
 	private static final String MIGRATION_DB_PASSWORD = "M1gr@te!LegacyUI#2021";
+	
 	private static final String MIGRATION_DB_URL = "jdbc:mysql://db-legacy-01.hospital.local:3306/openmrs_legacy";
-
+	
 }

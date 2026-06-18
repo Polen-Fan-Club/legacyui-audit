@@ -1,0 +1,120 @@
+# OTAP-omgeving voor de legacyui-audit (sprint 1, taak 5.3)
+#
+# legacyui is een OpenMRS-*module* (.omod), geen zelfstandige applicatie.
+# Een echte draaiomgeving = een OpenMRS Platform-instance + database, waarin
+# de gebouwde .omod wordt geladen. Onderstaande compose zet per omgeving
+# (dev/test/prod) een OpenMRS + MySQL-paar neer.
+#
+# Gebruik:
+#   docker compose --profile dev  up
+#   docker compose --profile test up
+#   docker compose --profile prod up
+#
+# SECRETS: wachtwoorden staan NIET in dit bestand. Ze worden uit een lokaal
+# .env-bestand gelezen (zie .env.example). .env is gitignored en hoort nooit
+# in versiebeheer. Zo bevat de repo geen plaintext credentials.
+#
+# LET OP: image-tags zijn een startpunt, GEEN geverifieerde match met OpenMRS
+# Platform 2.0.0. Valideren hoort bij sprint 3 voordat dit als 'werkend' geldt.
+
+services:
+  # ---------------- DEV ----------------
+  db-dev:
+    profiles: [dev]
+    image: mysql:5.7
+    environment:
+      MYSQL_DATABASE: openmrs
+      MYSQL_ROOT_PASSWORD: ${DEV_DB_ROOT_PASSWORD:?set in .env}
+      MYSQL_USER: openmrs
+      MYSQL_PASSWORD: ${DEV_DB_PASSWORD:?set in .env}
+    volumes:
+      - dev-db:/var/lib/mysql
+    command: --character-set-server=utf8 --collation-server=utf8_general_ci
+
+  openmrs-dev:
+    profiles: [dev]
+    image: openmrs/openmrs-reference-application-distro:demo
+    depends_on:
+      - db-dev
+    ports:
+      - "8081:8080"
+    environment:
+      DB_DATABASE: openmrs
+      DB_HOST: db-dev
+      DB_USERNAME: openmrs
+      DB_PASSWORD: ${DEV_DB_PASSWORD:?set in .env}
+      DB_CREATE_TABLES: "true"
+      DB_AUTO_UPDATE: "true"
+    volumes:
+      - dev-data:/openmrs/data
+      - ./omod/target:/openmrs/data/modules-staging:ro
+
+  # ---------------- TEST ----------------
+  db-test:
+    profiles: [test]
+    image: mysql:5.7
+    environment:
+      MYSQL_DATABASE: openmrs
+      MYSQL_ROOT_PASSWORD: ${TEST_DB_ROOT_PASSWORD:?set in .env}
+      MYSQL_USER: openmrs
+      MYSQL_PASSWORD: ${TEST_DB_PASSWORD:?set in .env}
+    volumes:
+      - test-db:/var/lib/mysql
+    command: --character-set-server=utf8 --collation-server=utf8_general_ci
+
+  openmrs-test:
+    profiles: [test]
+    image: openmrs/openmrs-reference-application-distro:demo
+    depends_on:
+      - db-test
+    ports:
+      - "8082:8080"
+    environment:
+      DB_DATABASE: openmrs
+      DB_HOST: db-test
+      DB_USERNAME: openmrs
+      DB_PASSWORD: ${TEST_DB_PASSWORD:?set in .env}
+      DB_CREATE_TABLES: "true"
+      DB_AUTO_UPDATE: "true"
+    volumes:
+      - test-data:/openmrs/data
+      - ./omod/target:/openmrs/data/modules-staging:ro
+
+  # ---------------- PROD ----------------
+  db-prod:
+    profiles: [prod]
+    image: mysql:5.7
+    environment:
+      MYSQL_DATABASE: openmrs
+      MYSQL_ROOT_PASSWORD: ${PROD_DB_ROOT_PASSWORD:?set in .env}
+      MYSQL_USER: openmrs
+      MYSQL_PASSWORD: ${PROD_DB_PASSWORD:?set in .env}
+    volumes:
+      - prod-db:/var/lib/mysql
+    command: --character-set-server=utf8 --collation-server=utf8_general_ci
+
+  openmrs-prod:
+    profiles: [prod]
+    image: openmrs/openmrs-reference-application-distro:demo
+    depends_on:
+      - db-prod
+    ports:
+      - "8083:8080"
+    environment:
+      DB_DATABASE: openmrs
+      DB_HOST: db-prod
+      DB_USERNAME: openmrs
+      DB_PASSWORD: ${PROD_DB_PASSWORD:?set in .env}
+      DB_CREATE_TABLES: "false"
+      DB_AUTO_UPDATE: "false"
+    volumes:
+      - prod-data:/openmrs/data
+      - ./omod/target:/openmrs/data/modules-staging:ro
+
+volumes:
+  dev-db:
+  dev-data:
+  test-db:
+  test-data:
+  prod-db:
+  prod-data:
