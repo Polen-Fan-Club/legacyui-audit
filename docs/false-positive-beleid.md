@@ -14,7 +14,7 @@ Een teamlid beoordeelt elke finding; de pipeline breekt niet automatisch op find
 
 ## Onderdrukken — herleidbaar
 
-- **Snyk:** via `.snyk`-policyfile in de repo-root. Elke ignore krijgt een `reason` en `expires`. De policyfile staat in versiebeheer, dus de onderdrukking is een commit.
+- **Snyk:** elke onderdrukte finding krijgt een onderbouwing (`reason`) en, waar van toepassing, een hertoetsmoment vastgelegd bij de triage-beslissing. De triage is momenteel handmatig; het formaliseren in een `.snyk`-policyfile in versiebeheer (zodat elke onderdrukking een commit-spoor krijgt) staat als gepland backlog-item B13 (`security-backlog.md`, CI-CD R5).
 - **Dependabot:** alert dismissen mét reden; de reden blijft zichtbaar in de repo.
 
 > **Noot — Dependency Review Action niet inzetbaar.** De `actions/dependency-review-action` vereist GitHub Advanced Security. Code Scanning voor private repositories is een betaalde Enterprise-feature ("Contact sales") — geverifieerd op zowel een persoonlijk Pro-account als in een organisatie; een org maken lost dit niet op. De repo public maken zou GHAS gratis geven, maar is onwenselijk voor een vertrouwelijkheidsaudit op een zorgmodule. De PR-gate-functie wordt daarom gedekt door Dependabot security updates (automatische patch-PR's) + Snyk-scanrapport, niet door de Dependency Review Action.
@@ -23,7 +23,7 @@ Een teamlid beoordeelt elke finding; de pipeline breekt niet automatisch op find
 
 ## Categorieën van false positives
 
-Een finding krijgt de status **False positive** als aan één van de volgende criteria voldaan is. Per suppression in de `.snyk`-policyfile of Dependabot-dismiss wordt de categorie expliciet benoemd.
+Een finding krijgt de status **False positive** als aan één van de volgende criteria voldaan is. Per onderdrukking (in de handmatige triage-onderbouwing of een Dependabot-dismiss) wordt de categorie expliciet benoemd.
 
 | Categorie | Definitie | Toewijzingscriterium |
 |---|---|---|

@@ -21,7 +21,7 @@ log4j 1.x en de Spring-upgrade zijn de grootste onzekerheden: log4j 1.x is end-o
 
 ## Triage en onderdrukking
 
-De kwetsbare baseline is bewust niet gepatcht: dat zou `baseline-legacyui-1.20.0` wijzigen vóór de analyse en de herleidbaarheid breken. De Dependabot-PR's (#10–14) staan daarom open als materiaal voor het patchadvies. Elke SCA-/SAST-finding krijgt een triagebesluit (Fix/Accept/False positive/Defer) met verplichte onderbouwing; onderdrukkingen lopen herleidbaar via de `.snyk`-policyfile in versiebeheer, met `reason` en `expires` per ignore (`false-positive-beleid.md`).
+De kwetsbare baseline is bewust niet gepatcht: dat zou `baseline-legacyui-1.20.0` wijzigen vóór de analyse en de herleidbaarheid breken. De Dependabot-PR's (#10–14) staan daarom open als materiaal voor het patchadvies. Elke SCA-/SAST-finding krijgt een triagebesluit (Fix/Accept/False positive/Defer) met verplichte onderbouwing; onderdrukkingen worden nu handmatig herleidbaar vastgelegd met een `reason` en, waar van toepassing, een hertoetsmoment per finding. Het formaliseren in een `.snyk`-policyfile in versiebeheer staat als gepland backlog-item B13 (`false-positive-beleid.md`, conform CI-CD R5).
 
 ## GitHub Advanced Security — comply-or-explain
 
