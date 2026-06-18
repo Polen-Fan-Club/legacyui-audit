@@ -39,7 +39,7 @@ jobs:
       # Het rapport wordt al door 'mvn clean install' gegenereerd (jacoco report-goal
       # in de test-fase van omod). Hier publiceren we het als artefact.
       - name: Upload JaCoCo coverage report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: jacoco-coverage
           path: omod/target/site/jacoco/
@@ -72,7 +72,7 @@ jobs:
           ls -la sbom-out
 
       - name: Upload SBOM artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: sbom-cyclonedx
           path: sbom-out/*.json
