@@ -24,7 +24,7 @@ Dit verslag legt vast welke maatregelen in de **CI/CD-pipeline en repo-inrichtin
 |---|-----------|------|--------|--------|
 | M1 | SBOM-generatie (CycloneDX) als CI-artifact | Ondersteunt | Actief | CI-run + artifact `sbom-cyclonedx` |
 | M2 | CodeQL SAST-scan in CI | Ondersteunt | Actief | Run + artifact `codeql-sarif` |
-| M3 | Dependabot (alerts + version-updates) | Ondersteunt | Actief | Settings + PR's #10–14 |
+| M3 | Dependabot (alerts + version-updates) | Ondersteunt | Actief | Settings + getrieerde PR's (zie `dependabot-triage.md`) |
 | M4 | Branch protection op `main` | Procesmaatregel | Actief | Ruleset + PR-flow |
 | M5 | OTAP-omgevingsscheiding (docker-compose + GitHub Environments) | Ondersteunt | Ingericht | `docker-compose.yml` + 3 Environments |
 | M6 | Secrets buiten versiebeheer (`.env` / `.gitignore`) | Dekt deels af | Actief | `docker-compose.yml`, `.env.example`, commit `10f9a4a` |
@@ -35,13 +35,13 @@ Dit verslag legt vast welke maatregelen in de **CI/CD-pipeline en repo-inrichtin
 
 ## 3. Maatregelen gekoppeld aan controls
 
-**M1 — SBOM-generatie (CycloneDX).** CI genereert bij elke build een SBOM in CycloneDX-formaat als artifact, met alle third-party componenten en versies. *Ondersteunt* — geen control direct; beheersinstrument voor kwetsbaarheidsmanagement, basis voor de sprint-2-analyse. **Bewijs:** artifact `sbom-cyclonedx` (CycloneDX 1.5, 100 componenten, o.a. log4j 1.2.x). *Signaleert* verouderde componenten; verhelpen is sprint-2-werk.
+**M1 — SBOM-generatie (CycloneDX).** CI genereert bij elke build een SBOM in CycloneDX-formaat als artifact, met alle third-party componenten en versies. *Ondersteunt* — geen control direct; beheersinstrument voor kwetsbaarheidsmanagement, basis voor de sprint-2-analyse. **Bewijs:** artifact `sbom-cyclonedx` (CycloneDX 1.5, circa 100 componenten, o.a. log4j 1.2.x — exact aantal te verifiëren in het gegenereerde SBOM-artefact). *Signaleert* verouderde componenten; verhelpen is sprint-2-werk.
 
-**M2 — CodeQL SAST-scan.** Statische analyse draait in CI op de volledige module, produceert SARIF. *Ondersteunt* A.8.3/8.5/8.15 als **detectiemaatregel**: vindt potentiële tekortkomingen, lost ze niet op, garandeert geen volledige dekking. **Bewijs:** artifact `codeql-sarif` (SARIF 2.1.0, CodeQL 2.25.5, 592 bestanden, 76 security-queries, 0 findings default-suite).
+**M2 — CodeQL SAST-scan.** Statische analyse draait in CI op de volledige module, produceert SARIF. *Ondersteunt* A.8.3/8.5/8.15 als **detectiemaatregel**: vindt potentiële tekortkomingen, lost ze niet op, garandeert geen volledige dekking. **Bewijs:** artifact `codeql-sarif` (SARIF 2.1.0; aantallen bestanden/queries en findings te verifiëren in het gegenereerde SARIF-artefact; default-suite gaf 0 findings).
 - **0 findings ≠ veilig:** draaide met *default* suite, niet `security-extended`. Handmatige inspectie (gap-analyse) vond wél tekortkomingen (ontbrekende audit-logging, dode IP-binding) die de default-suite niet markeerde. SAST en handmatige analyse zijn complementair.
 - **Security-tab niet beschikbaar:** upload vereist GitHub Advanced Security. Code Scanning voor private repos is een betaalde Enterprise-feature ("Contact sales") — geverifieerd op zowel persoonlijk Pro-account als in een organisatie; een org maken lost dit niet op. Public maken zou GHAS gratis geven, maar is onwenselijk voor een vertrouwelijkheidsaudit op een zorgmodule. Resultaten daarom als CI-artifact. Analyse draait volledig; alleen de presentatielaag wijkt af. Bewuste, geverifieerde keuze.
 
-**M3 — Dependabot.** Geactiveerd voor alerts én version-update-PR's op Maven-deps en GitHub Actions. *Ondersteunt* — geen control direct; beheersmaatregel voor technische kwetsbaarheden. **Bewijs:** alerts + security updates aan; PR's #10–14. De openstaande PR's zijn **bewust niet gemerged** — materiaal voor het sprint-2-patchadvies; nu mergen wijzigt de baseline (`baseline-legacyui-1.20.0`) vóór de analyse. Enkele PR's falen op de license-header-check — zelf een observatie voor het patchadvies.
+**M3 — Dependabot.** Geactiveerd voor alerts én version-update-PR's op Maven-deps en GitHub Actions. *Ondersteunt* — geen control direct; beheersmaatregel voor technische kwetsbaarheden. **Bewijs:** alerts + security updates aan. De vijftien version-update-PR's zijn per stuk getrieerd met een onderbouwd besluit (Merge / Defer / Close) — zie `dependabot-triage.md`. **Pipeline-tooling-bumps** (GitHub Actions, JaCoCo-plugin) zijn gemerged: ze raken de geauditeerde module-baseline niet (ze draaien op de CI-runner of als build-tooling, niet in het `.omod`-artefact) en de build is na merge geverifieerd groen. **Baseline- en platform-bumps** (openmrsPlatform, javax.servlet-api, parent-POM, jfreechart) blijven **bewust deferred** — materiaal voor het patchadvies; mergen zou de baseline (`baseline-legacyui-1.20.0`) wijzigen vóór de analyse, en deze bumps breken aantoonbaar de build (geverifieerd bewijs voor het patchadvies, `risk-assessment-report.md` §3b). Een eerdere aanname dat de PR's op de license-header-check faalden bleek onjuist bij triage: de werkelijke fail-oorzaken zijn een CI-infra-kwestie bij enkele build-plugin-PR's (groen na re-run) en een echte build-breuk bij de baseline-bumps.
 
 **M4 — Branch protection op `main`.** Actieve ruleset: directe pushes geblokkeerd, wijzigingen alleen via PR, CI moet groen zijn. *Procesmaatregel* — dekt geen A.8.3/8.5/8.15 af, borgt **integriteit en herleidbaarheid** van de audit: elke wijziging aan de baseline traceerbaar via PR. Aan een van de drie controls koppelen zou een overclaim zijn. **Bewijs:** actieve ruleset; alle sprint-1-wijzigingen via PR's met groene checks gemerged.
 
@@ -81,7 +81,7 @@ Dit verslag legt vast welke maatregelen in de **CI/CD-pipeline en repo-inrichtin
 |--------|-----------|-------------------|
 | SBOM-artifact | Actions-run → `sbom-cyclonedx` | Download + open `*.cdx.json` |
 | CodeQL-artifact | Actions-run → `codeql-sarif` | Download + open `java.sarif` |
-| Dependabot actief | Settings → Advanced Security | + open PR's #10–14 |
+| Dependabot actief + triage | Settings → Advanced Security; `docs/dependabot-triage.md` | open + gemergede PR's; besluit per PR in het triage-document |
 | Branch protection | Settings → Rules → Rulesets | PR-historie op `main` |
 | OTAP-inrichting | `docker-compose.yml` + Settings → Environments | repo-root + Environments-tab |
 | Secrets-hygiëne | `docker-compose.yml`, `.env.example`, `.gitignore` | commit `10f9a4a` |
