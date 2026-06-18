@@ -35,7 +35,7 @@ Dit verslag legt vast welke maatregelen in de **CI/CD-pipeline en repo-inrichtin
 
 ## 3. Maatregelen gekoppeld aan controls
 
-**M1 — SBOM-generatie (CycloneDX).** CI genereert bij elke build een SBOM in CycloneDX-formaat als artifact, met alle third-party componenten en versies. *Ondersteunt* — geen control direct; beheersinstrument voor kwetsbaarheidsmanagement, basis voor de sprint-2-analyse. **Bewijs:** artifact `sbom-cyclonedx` (CycloneDX 1.5, circa 100 componenten, o.a. log4j 1.2.x — exact aantal te verifiëren in het gegenereerde SBOM-artefact). *Signaleert* verouderde componenten; verhelpen is sprint-2-werk.
+**M1 — SBOM-generatie (CycloneDX).** CI genereert bij elke build een SBOM in CycloneDX-formaat als artifact, met alle third-party componenten en versies. *Ondersteunt* — geen control direct; beheersinstrument voor kwetsbaarheidsmanagement, basis voor de sprint-2-analyse. **Bewijs:** artifact `sbom-cyclonedx` (CycloneDX 1.5, 100 componenten, o.a. log4j 1.2.x; geverifieerd in het gegenereerde SBOM-artefact). *Signaleert* verouderde componenten; verhelpen is sprint-2-werk.
 
 **M2 — CodeQL SAST-scan.** Statische analyse draait in CI op de volledige module, produceert SARIF. *Ondersteunt* A.8.3/8.5/8.15 als **detectiemaatregel**: vindt potentiële tekortkomingen, lost ze niet op, garandeert geen volledige dekking. **Bewijs:** artifact `codeql-sarif` (SARIF 2.1.0; aantallen bestanden/queries en findings te verifiëren in het gegenereerde SARIF-artefact; default-suite gaf 0 findings).
 - **0 findings ≠ veilig:** draaide met *default* suite, niet `security-extended`. Handmatige inspectie (gap-analyse) vond wél tekortkomingen (ontbrekende audit-logging, dode IP-binding) die de default-suite niet markeerde. SAST en handmatige analyse zijn complementair.
@@ -105,8 +105,8 @@ NEN-7510:2024-2 vereist dat data in niet-productieomgevingen niet herleidbaar is
 
 ## 7. Open punten
 
-- **OTAP-activering:** Environments ingericht, nog niet aan deploy-workflow gekoppeld; prod-protection-rule niet getriggerd. Volstaat inrichting voor sprint 1?
+- **OTAP-activering:** Environments ingericht, niet aan een deploy-workflow gekoppeld; de prod-protection-rule wordt daardoor niet getriggerd. Dit is een bewuste scope-grens — het audittraject richt zich op de module en de pipeline-inrichting, niet op een draaiende OTAP-deployment. Vastgelegd als comply-or-explain, niet als gat.
 - **CodeQL-diepte:** overweeg `security-extended` in sprint 2.
 - **Remediatie A.8.15:** logging-tekortkomingen vragen applicatiewijzigingen (sprint 2+) — inmiddels opgelost in sprint 3 (commit `c693cb2`, `0421a10`).
-- **Git-historie secrets:** dummy-credentials nog in historie; bewuste keuze geen rewrite — bevestigen.
+- **Git-historie secrets:** dummy-credentials (nooit echte secrets) staan nog in de historie; bewust geen history-rewrite gedaan, omdat het dummy-waarden betreft. Vastgelegd als bewuste keuze.
 - **Verificatie gap-analyse-claims:** 8.3-6 (dode IP-binding) en 8.5-3 (CSRF via core) zijn inmiddels dynamisch geverifieerd via de pentest (T1 resp. buiten scope).
