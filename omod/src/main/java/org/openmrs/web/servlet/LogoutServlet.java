@@ -17,7 +17,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import org.openmrs.User;
 import org.openmrs.api.context.Context;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Servlet called by the logout link in the webapp. This will call Context.logout() and then make
@@ -29,6 +32,9 @@ public class LogoutServlet extends HttpServlet {
 	
 	public static final long serialVersionUID = 123423L;
 	
+	// SLF4J chosen for this file (gap 8.15-10): the file had no logger, so no Commons Logging to mix with.
+	private static final Logger log = LoggerFactory.getLogger(LogoutServlet.class);
+	
 	/**
 	 * @see javax.servlet.http.HttpServlet#doGet(javax.servlet.http.HttpServletRequest,
 	 *      javax.servlet.http.HttpServletResponse)
@@ -37,6 +43,13 @@ public class LogoutServlet extends HttpServlet {
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		
 		HttpSession httpSession = request.getSession();
+		
+		// Audit-logging (NEN 8.15): capture the actor BEFORE Context.logout() clears the authentication.
+		// Fall back to the systemId when the username field is empty (as on the super-admin account).
+		User user = Context.getAuthenticatedUser();
+		String actor = (user == null) ? "anonymous" : (user.getUsername() != null && !user.getUsername().isEmpty() ? user
+		        .getUsername() : "systemId:" + user.getSystemId());
+		log.warn("AUDIT LOGOUT user=" + actor + " ip=" + request.getRemoteAddr() + " outcome=SUCCESS");
 		
 		Context.logout();
 		

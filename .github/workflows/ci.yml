@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up JDK 8 (Temurin)
         uses: actions/setup-java@v4
@@ -34,6 +34,16 @@ jobs:
         run: mvn -B clean install
         env:
           CI: "true"
+
+      # --- JaCoCo coverage-rapport als CI-artifact (sprint 3, punt 4) ---
+      # Het rapport wordt al door 'mvn clean install' gegenereerd (jacoco report-goal
+      # in de test-fase van omod). Hier publiceren we het als artefact.
+      - name: Upload JaCoCo coverage report
+        uses: actions/upload-artifact@v7
+        with:
+          name: jacoco-coverage
+          path: omod/target/site/jacoco/
+          if-no-files-found: error
 
       # --- SBOM (CycloneDX) als CI-artifact: eindcheck sprint 1 ---
       # outputDirectory expliciet gezet zodat de parent-pom de output niet
@@ -62,7 +72,7 @@ jobs:
           ls -la sbom-out
 
       - name: Upload SBOM artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: sbom-cyclonedx
           path: sbom-out/*.json
